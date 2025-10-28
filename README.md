@@ -22,7 +22,7 @@ This project generates complete Java Spring Boot applications following **Clean 
 
 ```bash
 # Install Python dependencies
-pip3 install -r requirements.txt
+poetry install
 
 # Install Java and Maven (if not already installed)
 brew install maven
@@ -98,16 +98,18 @@ mvn -version
 
 ### Python Dependencies
 ```bash
-# Install required Python packages
-pip3 install pystache
+# Install Poetry (if not already installed)
+curl -sSL https://install.python-poetry.org | python3 -
 
-# Or using requirements file
-pip3 install -r requirements.txt
+# Install project dependencies
+poetry install
 ```
 
-Create `requirements.txt`:
-```
-pystache>=0.6.8
+The project uses `pyproject.toml` for dependency management:
+```toml
+[tool.poetry.dependencies]
+python = "^3.8"
+pystache = "^0.6.8"
 ```
 
 ### Smithy CLI (Optional)
@@ -420,7 +422,7 @@ operations = ["CreateUser", "GetUser", "UpdateUser", "DeleteUser", "SearchUsers"
 
 1. **Python Dependencies Missing**
    ```bash
-   pip3 install pystache
+   poetry install
    ```
 
 2. **Smithy Build Fails**
