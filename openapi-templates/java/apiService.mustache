@@ -1,0 +1,37 @@
+package {{packageName}}.service;
+
+import {{packageName}}.model.*;
+import {{packageName}}.entity.*;
+import {{packageName}}.repository.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class {{classname}}Service {
+
+    private final {{classname}}Repository {{classVarName}}Repository;
+    private final {{classname}}Mapper {{classVarName}}Mapper;
+
+    {{#operations}}
+    {{#operation}}
+    public {{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}Void{{/returnType}} {{operationId}}({{#allParams}}{{{dataType}}} {{paramName}}{{^-last}}, {{/-last}}{{/allParams}}) {
+        log.info("Executing {{operationId}} with parameters: {{#allParams}}{{paramName}}={}{{^-last}}, {{/-last}}{{/allParams}}");
+        
+        try {
+            {{#returnType}}return {{classVarName}}Mapper.toResponse({{classVarName}}Repository.save({{classVarName}}Mapper.toEntity({{#allParams}}{{paramName}}{{^-last}}, {{/-last}}{{/allParams}})));{{/returnType}}
+            {{^returnType}}{{classVarName}}Repository.deleteById({{#allParams}}{{paramName}}{{^-last}}, {{/-last}}{{/allParams}});{{/returnType}}
+        } catch (Exception e) {
+            log.error("Error in {{operationId}}: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+    {{/operation}}
+    {{/operations}}
+}

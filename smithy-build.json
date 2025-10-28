@@ -1,0 +1,33 @@
+{
+  "version": "2.0",
+  "sources": [
+    "smithy/"
+  ],
+  "maven": {
+    "dependencies": [
+      "software.amazon.smithy:smithy-openapi:1.60.3",
+      "software.amazon.smithy:smithy-model:1.60.3",
+      "software.amazon.smithy:smithy-aws-traits:1.60.3"
+    ],
+    "repositories": [
+      {
+        "url": "https://repo.maven.apache.org/maven2"
+      }
+    ]
+  },
+  "projections": {
+    "user_service": {
+      "plugins": {
+        "model": {
+          "imports": [
+            "src/main/"
+          ]
+        },
+        "openapi": {
+          "service": "com.example.userservice#UserService",
+          "schemaVersion": "draft-07"
+        }
+      }
+    }
+  }
+}

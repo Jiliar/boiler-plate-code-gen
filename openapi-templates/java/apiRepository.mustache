@@ -1,0 +1,32 @@
+package {{packageName}}.repository;
+
+import {{packageName}}.entity.{{classname}}Entity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.stereotype.Repository;
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+public interface {{classname}}Repository extends JpaRepository<{{classname}}Entity, UUID>, JpaSpecificationExecutor<{{classname}}Entity> {
+    
+    {{#operations}}
+    {{#operation}}
+    {{#vendorExtensions}}
+    {{#x-repository-method}}
+    Optional<{{classname}}Entity> {{x-repository-method}}({{#allParams}}{{{dataType}}} {{paramName}}{{^-last}}, {{/-last}}{{/allParams}});
+    {{/x-repository-method}}
+    {{/vendorExtensions}}
+    {{/operation}}
+    {{/operations}}
+    
+    // Generated methods based on model properties
+    {{#vars}}
+    {{#isPrimitiveType}}
+    {{^isListContainer}}
+    Optional<{{classname}}Entity> findBy{{nameInPascalCase}}({{datatype}} {{name}});
+    boolean existsBy{{nameInPascalCase}}({{datatype}} {{name}});
+    {{/isListContainer}}
+    {{/isPrimitiveType}}
+    {{/vars}}
+}
