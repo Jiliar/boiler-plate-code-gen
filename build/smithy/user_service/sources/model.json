@@ -1,0 +1,462 @@
+{
+    "smithy": "2.0",
+    "shapes": {
+        "com.example.userservice#ConflictError": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#error": "client",
+                "smithy.api#httpError": 409
+            }
+        },
+        "com.example.userservice#CreateUser": {
+            "type": "operation",
+            "input": {
+                "target": "com.example.userservice#CreateUserRequest"
+            },
+            "output": {
+                "target": "com.example.userservice#UserResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.example.userservice#ConflictError"
+                },
+                {
+                    "target": "com.example.userservice#ValidationError"
+                }
+            ],
+            "traits": {
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/users",
+                    "code": 201
+                },
+                "smithy.api#idempotent": {}
+            }
+        },
+        "com.example.userservice#CreateUserRequest": {
+            "type": "structure",
+            "members": {
+                "username": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 3,
+                            "max": 50
+                        },
+                        "smithy.api#required": {}
+                    }
+                },
+                "email": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#pattern": "^[^@]+@[^@]+\\.[^@]+$",
+                        "smithy.api#required": {}
+                    }
+                },
+                "password": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 6,
+                            "max": 100
+                        },
+                        "smithy.api#required": {}
+                    }
+                },
+                "firstName": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 100
+                        }
+                    }
+                },
+                "lastName": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 100
+                        }
+                    }
+                }
+            }
+        },
+        "com.example.userservice#DeleteUser": {
+            "type": "operation",
+            "input": {
+                "target": "com.example.userservice#DeleteUserRequest"
+            },
+            "output": {
+                "target": "com.example.userservice#DeleteUserResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.example.userservice#NotFoundError"
+                }
+            ],
+            "traits": {
+                "smithy.api#http": {
+                    "method": "DELETE",
+                    "uri": "/users/{userId}"
+                },
+                "smithy.api#idempotent": {}
+            }
+        },
+        "com.example.userservice#DeleteUserRequest": {
+            "type": "structure",
+            "members": {
+                "userId": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#httpLabel": {},
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.example.userservice#DeleteUserResponse": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "deleted": {
+                    "target": "smithy.api#Boolean",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.example.userservice#GetUser": {
+            "type": "operation",
+            "input": {
+                "target": "com.example.userservice#GetUserRequest"
+            },
+            "output": {
+                "target": "com.example.userservice#UserResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.example.userservice#NotFoundError"
+                }
+            ],
+            "traits": {
+                "smithy.api#http": {
+                    "method": "GET",
+                    "uri": "/users/{userId}"
+                },
+                "smithy.api#readonly": {}
+            }
+        },
+        "com.example.userservice#GetUserRequest": {
+            "type": "structure",
+            "members": {
+                "userId": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#httpLabel": {},
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.example.userservice#ListUsers": {
+            "type": "operation",
+            "input": {
+                "target": "com.example.userservice#ListUsersRequest"
+            },
+            "output": {
+                "target": "com.example.userservice#ListUsersResponse"
+            },
+            "traits": {
+                "smithy.api#http": {
+                    "method": "GET",
+                    "uri": "/users"
+                },
+                "smithy.api#readonly": {}
+            }
+        },
+        "com.example.userservice#ListUsersRequest": {
+            "type": "structure",
+            "members": {
+                "page": {
+                    "target": "smithy.api#Integer",
+                    "traits": {
+                        "smithy.api#default": 1,
+                        "smithy.api#httpQuery": "page",
+                        "smithy.api#range": {
+                            "min": 1
+                        }
+                    }
+                },
+                "size": {
+                    "target": "smithy.api#Integer",
+                    "traits": {
+                        "smithy.api#default": 20,
+                        "smithy.api#httpQuery": "size",
+                        "smithy.api#range": {
+                            "min": 1,
+                            "max": 100
+                        }
+                    }
+                },
+                "search": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#httpQuery": "search",
+                        "smithy.api#length": {
+                            "max": 100
+                        }
+                    }
+                }
+            }
+        },
+        "com.example.userservice#ListUsersResponse": {
+            "type": "structure",
+            "members": {
+                "users": {
+                    "target": "com.example.userservice#UserList",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "page": {
+                    "target": "smithy.api#Integer",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "size": {
+                    "target": "smithy.api#Integer",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "total": {
+                    "target": "smithy.api#Integer",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "totalPages": {
+                    "target": "smithy.api#Integer",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.example.userservice#NotFoundError": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#error": "client",
+                "smithy.api#httpError": 404
+            }
+        },
+        "com.example.userservice#UpdateUser": {
+            "type": "operation",
+            "input": {
+                "target": "com.example.userservice#UpdateUserRequest"
+            },
+            "output": {
+                "target": "com.example.userservice#UserResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.example.userservice#NotFoundError"
+                },
+                {
+                    "target": "com.example.userservice#ValidationError"
+                }
+            ],
+            "traits": {
+                "smithy.api#http": {
+                    "method": "PUT",
+                    "uri": "/users/{userId}"
+                },
+                "smithy.api#idempotent": {}
+            }
+        },
+        "com.example.userservice#UpdateUserRequest": {
+            "type": "structure",
+            "members": {
+                "userId": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#httpLabel": {},
+                        "smithy.api#required": {}
+                    }
+                },
+                "firstName": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 100
+                        }
+                    }
+                },
+                "lastName": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 100
+                        }
+                    }
+                },
+                "email": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#pattern": "^[^@]+@[^@]+\\.[^@]+$"
+                    }
+                }
+            }
+        },
+        "com.example.userservice#UserList": {
+            "type": "list",
+            "member": {
+                "target": "com.example.userservice#UserResponse"
+            }
+        },
+        "com.example.userservice#UserResponse": {
+            "type": "structure",
+            "members": {
+                "userId": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "username": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "email": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "firstName": {
+                    "target": "smithy.api#String"
+                },
+                "lastName": {
+                    "target": "smithy.api#String"
+                },
+                "status": {
+                    "target": "com.example.userservice#UserStatus",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "createdAt": {
+                    "target": "smithy.api#Timestamp",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "updatedAt": {
+                    "target": "smithy.api#Timestamp",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.example.userservice#UserService": {
+            "type": "service",
+            "version": "2023-01-01",
+            "operations": [
+                {
+                    "target": "com.example.userservice#CreateUser"
+                },
+                {
+                    "target": "com.example.userservice#DeleteUser"
+                },
+                {
+                    "target": "com.example.userservice#GetUser"
+                },
+                {
+                    "target": "com.example.userservice#ListUsers"
+                },
+                {
+                    "target": "com.example.userservice#UpdateUser"
+                }
+            ],
+            "traits": {
+                "aws.protocols#restJson1": {},
+                "smithy.api#cors": {
+                    "origin": "*"
+                },
+                "smithy.api#documentation": "A service for managing user accounts.",
+                "smithy.api#title": "User Service API"
+            }
+        },
+        "com.example.userservice#UserStatus": {
+            "type": "enum",
+            "members": {
+                "ACTIVE": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "ACTIVE"
+                    }
+                },
+                "INACTIVE": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "INACTIVE"
+                    }
+                },
+                "SUSPENDED": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "SUSPENDED"
+                    }
+                }
+            }
+        },
+        "com.example.userservice#ValidationError": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "field": {
+                    "target": "smithy.api#String"
+                }
+            },
+            "traits": {
+                "smithy.api#error": "client",
+                "smithy.api#httpError": 400
+            }
+        }
+    }
+}

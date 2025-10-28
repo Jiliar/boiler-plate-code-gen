@@ -1,0 +1,150 @@
+@startuml UserServiceComponentDiagram
+!theme plain
+skinparam componentStyle rectangle
+skinparam linetype ortho
+
+title User Service - Hexagonal Architecture
+
+' External Systems
+[Web Client] as Client
+database "H2 Database" as DB
+
+' Main Application
+package "User Service" {
+    
+    ' Infrastructure Layer
+    package "Infrastructure" {
+        [UserController] as Controller
+        [UserRepositoryAdapter] as RepoAdapter
+        [JpaUserRepository] as JpaRepo
+        [UserDbo] as Entity
+        [GlobalExceptionHandler] as ExceptionHandler
+        [SecurityConfiguration] as Security
+    }
+    
+    ' Application Layer
+    package "Application" {
+        [CreateUserService] as CreateService
+        [GetUserService] as GetService
+        [UpdateUserService] as UpdateService
+        [DeleteUserService] as DeleteService
+        [ListUsersService] as ListService
+        [UserMapper] as Mapper
+        
+        package "DTOs" {
+            [CreateUserRequestContent] as CreateRequest
+            [CreateUserResponseContent] as CreateResponse
+            [GetUserResponseContent] as GetResponse
+            [UpdateUserRequestContent] as UpdateRequest
+            [UpdateUserResponseContent] as UpdateResponse
+            [DeleteUserResponseContent] as DeleteResponse
+            [ListUsersResponseContent] as ListResponse
+            [UserResponse] as UserResponse
+        }
+    }
+    
+    ' Domain Layer
+    package "Domain" {
+        [User] as UserModel
+        [EntityStatus] as Status
+        [NotFoundException] as NotFound
+        
+        interface "CreateUserUseCase" as CreateUseCase
+        interface "GetUserUseCase" as GetUseCase
+        interface "UpdateUserUseCase" as UpdateUseCase
+        interface "DeleteUserUseCase" as DeleteUseCase
+        interface "ListUsersUseCase" as ListUseCase
+        interface "UserRepositoryPort" as RepoPort
+    }
+}
+
+' Framework
+package "Spring Framework" {
+    [Spring Boot] as SpringBoot
+    [Spring Data JPA] as SpringData
+    [Spring Security] as SpringSecurity
+    [MapStruct] as MapStructLib
+    [Hibernate] as Hibernate
+    [Jackson] as Jackson
+}
+
+' Main Relationships
+Client --> Controller : HTTP/REST
+Controller --> CreateUseCase
+Controller --> GetUseCase
+Controller --> UpdateUseCase
+Controller --> DeleteUseCase
+Controller --> ListUseCase
+
+CreateService ..|> CreateUseCase
+GetService ..|> GetUseCase
+UpdateService ..|> UpdateUseCase
+DeleteService ..|> DeleteUseCase
+ListService ..|> ListUseCase
+
+CreateService --> RepoPort
+GetService --> RepoPort
+UpdateService --> RepoPort
+DeleteService --> RepoPort
+ListService --> RepoPort
+
+CreateService --> Mapper
+GetService --> Mapper
+UpdateService --> Mapper
+DeleteService --> Mapper
+ListService --> Mapper
+
+RepoAdapter ..|> RepoPort
+RepoAdapter --> JpaRepo
+JpaRepo --> Entity
+Entity --> DB
+
+' Framework Dependencies
+Controller --> SpringBoot
+Controller --> Jackson
+JpaRepo --> SpringData
+JpaRepo --> Hibernate
+Mapper --> MapStructLib
+Security --> SpringSecurity
+ExceptionHandler --> NotFound
+
+' Domain Relationships
+UserModel --> Status
+Mapper --> UserModel
+Mapper --> Entity
+Mapper --> CreateRequest
+Mapper --> CreateResponse
+Mapper --> GetResponse
+Mapper --> UpdateRequest
+Mapper --> UpdateResponse
+Mapper --> DeleteResponse
+Mapper --> ListResponse
+Mapper --> UserResponse
+
+' Notes
+note top of Domain : **Domain Layer**\nPure business logic\nNo external dependencies
+
+note right of Application : **Application Layer**\nUse case orchestration\nDTO mapping
+
+note bottom of Infrastructure : **Infrastructure Layer**\nExternal concerns\nFramework integration
+
+' Styling
+skinparam component {
+    BackgroundColor<<REST Controller>> LightBlue
+    BackgroundColor<<Use Case>> LightGreen
+    BackgroundColor<<Repository Adapter>> LightYellow
+    BackgroundColor<<JPA Repository>> Orange
+    BackgroundColor<<Aggregate Root>> LightPink
+    BackgroundColor<<Value Object>> Pink
+    BackgroundColor<<Request DTO>> LightCyan
+    BackgroundColor<<Response DTO>> LightCyan
+    BackgroundColor<<MapStruct Mapper>> LightGray
+    BackgroundColor<<Framework>> Wheat
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+}
+
+@enduml

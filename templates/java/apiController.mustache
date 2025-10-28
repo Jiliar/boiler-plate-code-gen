@@ -1,0 +1,118 @@
+package {{packageName}};
+
+import {{domain_ports_input}}.*;
+import {{application_dto}}.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+/**
+ * REST Controller for {{entityName}} operations.
+ * <p>
+ * This controller serves as the input adapter in the Clean Architecture,
+ * handling HTTP requests and delegating business logic to use cases.
+ * It follows REST conventions and provides endpoints for CRUD operations.
+ * </p>
+ * 
+ * @author {{author}}
+ * @version {{version}}
+ */
+@Slf4j
+@RestController
+@RequestMapping("/{{entityPath}}")
+@RequiredArgsConstructor
+@Tag(name = "{{entityName}}", description = "{{entityName}} management operations")
+public class {{classname}} {
+
+    private final Create{{entityName}}UseCase create{{entityName}}UseCase;
+    private final Get{{entityName}}UseCase get{{entityName}}UseCase;
+    private final Update{{entityName}}UseCase update{{entityName}}UseCase;
+    private final Delete{{entityName}}UseCase delete{{entityName}}UseCase;
+    private final List{{entityName}}sUseCase list{{entityName}}sUseCase;
+
+    @PostMapping
+    @Operation(summary = "Create a new {{entityName}}", description = "Creates a new {{entityName}} with the provided information")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "{{entityName}} created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid input data"),
+        @ApiResponse(responseCode = "409", description = "{{entityName}} already exists")
+    })
+    public ResponseEntity<Create{{entityName}}ResponseContent> create{{entityName}}(
+            @Parameter(description = "{{entityName}} creation request", required = true)
+            @Valid @RequestBody Create{{entityName}}RequestContent request) {
+        log.info("Creating {{entityVarName}} with request: {}", request);
+        Create{{entityName}}ResponseContent response = create{{entityName}}UseCase.execute(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/{{entityIdPath}}")
+    @Operation(summary = "Get {{entityName}} by ID", description = "Retrieves a {{entityName}} by its unique identifier")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "{{entityName}} found"),
+        @ApiResponse(responseCode = "404", description = "{{entityName}} not found")
+    })
+    public ResponseEntity<Get{{entityName}}ResponseContent> get{{entityName}}(
+            @Parameter(description = "{{entityName}} unique identifier", required = true)
+            @PathVariable String {{entityVarName}}Id) {
+        log.info("Getting {{entityVarName}} with id: {}", {{entityVarName}}Id);
+        Get{{entityName}}ResponseContent response = get{{entityName}}UseCase.execute({{entityVarName}}Id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{{entityIdPath}}")
+    @Operation(summary = "Update {{entityName}}", description = "Updates an existing {{entityName}} with new information")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "{{entityName}} updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid input data"),
+        @ApiResponse(responseCode = "404", description = "{{entityName}} not found")
+    })
+    public ResponseEntity<Update{{entityName}}ResponseContent> update{{entityName}}(
+            @Parameter(description = "{{entityName}} unique identifier", required = true)
+            @PathVariable String {{entityVarName}}Id,
+            @Parameter(description = "{{entityName}} update request", required = true)
+            @Valid @RequestBody Update{{entityName}}RequestContent request) {
+        log.info("Updating {{entityVarName}} {} with request: {}", {{entityVarName}}Id, request);
+        Update{{entityName}}ResponseContent response = update{{entityName}}UseCase.execute({{entityVarName}}Id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{{entityIdPath}}")
+    @Operation(summary = "Delete {{entityName}}", description = "Deletes a {{entityName}} by its unique identifier")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "{{entityName}} deleted successfully"),
+        @ApiResponse(responseCode = "404", description = "{{entityName}} not found")
+    })
+    public ResponseEntity<Delete{{entityName}}ResponseContent> delete{{entityName}}(
+            @Parameter(description = "{{entityName}} unique identifier", required = true)
+            @PathVariable String {{entityVarName}}Id) {
+        log.info("Deleting {{entityVarName}} with id: {}", {{entityVarName}}Id);
+        Delete{{entityName}}ResponseContent response = delete{{entityName}}UseCase.execute({{entityVarName}}Id);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    @Operation(summary = "List {{entityName}}s", description = "Retrieves a paginated list of {{entityName}}s with optional search")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "{{entityName}}s retrieved successfully")
+    })
+    public ResponseEntity<List{{entityName}}sResponseContent> list{{entityName}}s(
+            @Parameter(description = "Page number (1-based)", example = "1")
+            @RequestParam(defaultValue = "1") Integer page,
+            @Parameter(description = "Page size", example = "20")
+            @RequestParam(defaultValue = "20") Integer size,
+            @Parameter(description = "Search term for filtering")
+            @RequestParam(required = false) String search) {
+        log.info("Listing {{entityVarName}}s with page: {}, size: {}, search: {}", page, size, search);
+        // TODO: Create List{{entityName}}sRequest DTO
+        List{{entityName}}sResponseContent response = list{{entityName}}sUseCase.execute(""); // Placeholder
+        return ResponseEntity.ok(response);
+    }
+}
