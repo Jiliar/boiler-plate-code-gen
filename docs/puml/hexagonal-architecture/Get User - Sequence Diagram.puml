@@ -1,25 +1,23 @@
-@startuml DeleteUser
+@startuml GetUser
 !theme plain
-title Delete User - Clean Architecture Flow
+title Get User - Hexagonal Architecture Flow
 
 actor Client
 participant "UserController\n(Input Adapter)" as Controller
-participant "DeleteUserService\n(Application Layer)" as Service
+participant "GetUserService\n(Application Layer)" as Service
 participant "UserMapper\n(Application Layer)" as Mapper
 participant "UserRepositoryAdapter\n(Output Adapter)" as RepoAdapter
 participant "JpaUserRepository\n(Infrastructure)" as JpaRepo
 database "H2 Database" as DB
 
-Client -> Controller: DELETE /users/{userId}
+Client -> Controller: GET /users/{userId}
 activate Controller
 
 Controller -> Service: execute(userId)
 activate Service
-note right: Implements DeleteUserUseCase\n(Domain Port)
 
 Service -> RepoAdapter: findById(userId)
 activate RepoAdapter
-note right: Verify user exists\nbefore deletion
 
 RepoAdapter -> JpaRepo: findById(userId)
 activate JpaRepo
@@ -37,30 +35,15 @@ alt User Found
     RepoAdapter --> Service: Optional<User>
     deactivate RepoAdapter
     
-    Service -> RepoAdapter: deleteById(userId)
-    activate RepoAdapter
-    note right: Physical deletion\nfrom database
-    
-    RepoAdapter -> JpaRepo: deleteById(userId)
-    activate JpaRepo
-    JpaRepo -> DB: DELETE FROM users WHERE id = ?
-    DB --> JpaRepo: void
-    JpaRepo --> RepoAdapter: void
-    deactivate JpaRepo
-    
-    RepoAdapter --> Service: void
-    deactivate RepoAdapter
-    
-    Service -> Mapper: toDeleteResponse(userId)
+    Service -> Mapper: toGetResponse(User)
     activate Mapper
-    note right: Create success response\nwith deleted userId
-    Mapper --> Service: DeleteUserResponseContent
+    Mapper --> Service: GetUserResponseContent
     deactivate Mapper
     
-    Service --> Controller: DeleteUserResponseContent
+    Service --> Controller: GetUserResponseContent
     deactivate Service
     
-    Controller --> Client: HTTP 200\n{userId: "xxx", message: "User deleted successfully"}
+    Controller --> Client: HTTP 200\n{user data}
     deactivate Controller
 
 else User Not Found
@@ -70,7 +53,7 @@ else User Not Found
     Service --> Controller: NotFoundException
     deactivate Service
     
-    Controller --> Client: HTTP 404\n{error: "User not found"}
+    Controller --> Client: HTTP 404\n{error message}
     deactivate Controller
 end
 

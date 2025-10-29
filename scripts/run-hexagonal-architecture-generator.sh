@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Clean Architecture Spring Boot Generator Runner
+# Hexagonal Architecture Spring Boot Generator Runner
 # This script runs the Python generator with the correct paths
 
 set -e
@@ -35,14 +35,14 @@ fi
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
 
-echo "Starting Clean Architecture code generation..."
+echo "Starting Hexagonal Architecture code generation..."
 echo "Config: $CONFIG_PATH"
 echo "Templates: $TEMPLATES_DIR"
 echo "Output: $OUTPUT_DIR"
 echo ""
 
 # Run the generator
-python3 "$SCRIPT_DIR/clean-architecture-generator.py" "$CONFIG_PATH" "$TEMPLATES_DIR" "$OUTPUT_DIR"
+python3 "$SCRIPT_DIR/hexagonal-architecture-generator.py" "$CONFIG_PATH" "$TEMPLATES_DIR" "$OUTPUT_DIR"
 
 echo ""
 echo "Generation complete! Check the generated project at: $OUTPUT_DIR"

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Clean Architecture Spring Boot Code Generator
+Hexagonal Architecture Spring Boot Code Generator
 
-Generates a complete Java Spring Boot project following Clean Architecture principles
+Generates a complete Java Spring Boot project following Hexagonal Architecture (Ports and Adapters) principles
 from Mustache templates and configuration.
 """
 
@@ -15,7 +15,7 @@ import pystache
 import subprocess
 import glob
 
-class CleanArchitectureGenerator:
+class HexagonalArchitectureGenerator:
     def __init__(self, config_path: str, templates_dir: str, output_dir: str):
         self.config_path = config_path
         self.templates_dir = Path(templates_dir)
@@ -32,7 +32,7 @@ class CleanArchitectureGenerator:
             return json.load(f)
     
     def _define_target_packages(self) -> Dict[str, str]:
-        """Define Clean Architecture package structure."""
+        """Define Hexagonal Architecture package structure."""
         return {
             "root": self.base_package,
             
@@ -519,8 +519,8 @@ class CleanArchitectureGenerator:
         self._write_file(file_path, content)
     
     def generate_complete_project(self):
-        """Generate complete Clean Architecture project from OpenAPI spec."""
-        print("Generating Clean Architecture Spring Boot project from OpenAPI spec...")
+        """Generate complete Hexagonal Architecture project from OpenAPI spec."""
+        print("Generating Hexagonal Architecture Spring Boot project from OpenAPI spec...")
         
         # Extract data from OpenAPI spec
         schemas = self.openapi_spec.get('components', {}).get('schemas', {})
@@ -577,13 +577,13 @@ class CleanArchitectureGenerator:
         self.generate_application_properties()
         self.generate_readme()
         
-        print(f"\nClean Architecture project generated successfully in: {self.output_dir}")
+        print(f"\nHexagonal Architecture project generated successfully in: {self.output_dir}")
         print(f"Generated {len(schemas)} DTOs from OpenAPI schemas")
         print(f"Generated {len(operations)} use cases from operations")
-        print("\nProject structure follows Clean Architecture principles:")
-        print("- Domain: Pure business logic and interfaces")
-        print("- Application: Use cases and DTOs")
-        print("- Infrastructure: External concerns (REST, JPA, etc.)")
+        print("\nProject structure follows Hexagonal Architecture principles:")
+        print("- Domain: Pure business logic and ports")
+        print("- Application: Use case implementations and DTOs")
+        print("- Infrastructure: External adapters (REST, JPA, Config)")
 
 
 def run_command(cmd):
@@ -600,7 +600,7 @@ def main():
     run_command("smithy build")
 
     if len(sys.argv) != 4:
-        print("Usage: python clean-architecture-generator.py <config_path> <templates_dir> <output_dir>")
+        print("Usage: python hexagonal-architecture-generator.py <config_path> <templates_dir> <output_dir>")
         sys.exit(1)
     
     config_path = sys.argv[1]
@@ -608,7 +608,7 @@ def main():
     output_dir = sys.argv[3]
     
     try:
-        generator = CleanArchitectureGenerator(config_path, templates_dir, output_dir)
+        generator = HexagonalArchitectureGenerator(config_path, templates_dir, output_dir)
         generator.generate_complete_project()
     except Exception as e:
         print(f"Error generating project: {e}")

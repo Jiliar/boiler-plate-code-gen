@@ -1,12 +1,12 @@
-# Clean Architecture Spring Boot Generator
+# Hexagonal Architecture Spring Boot Generator
 
 ## Overview
 
-This project generates complete Java Spring Boot applications following **Clean Architecture principles** from Smithy service definitions. It automatically creates a fully functional backend with proper layer separation and dependency inversion.
+This project generates complete Java Spring Boot applications following **Hexagonal Architecture (Ports and Adapters) principles** from Smithy service definitions. It automatically creates a fully functional backend with proper layer separation and dependency inversion.
 
 ## Features
 
-- ✅ **Clean Architecture Structure** with Domain, Application, and Infrastructure layers
+- ✅ **Hexagonal Architecture Structure** with Domain, Application, and Infrastructure layers
 - ✅ **Smithy Integration** - Generates OpenAPI specs from Smithy definitions
 - ✅ **Complete Code Generation** - DTOs, Services, Controllers, Repositories, Entities
 - ✅ **Dependency Inversion** - All dependencies point toward the domain layer
@@ -34,10 +34,10 @@ sdk use java 21.0.2-tem
 
 ```bash
 # Make script executable
-chmod +x scripts/run-clean-architecture-generator.sh
+chmod +x scripts/run-hexagonal-architecture-generator.sh
 
 # Run generator
-./scripts/run-clean-architecture-generator.sh
+./scripts/run-hexagonal-architecture-generator.sh
 ```
 
 ### 3. Run Generated Project
@@ -127,9 +127,9 @@ smithy --version
 ```
 boiler-plate-code-gen/
 ├── scripts/
-│   ├── clean-architecture-generator.py    # Main generator script
-│   └── run-clean-architecture-generator.sh # Execution script
-├── openapi-templates/
+│   ├── hexagonal-architecture-generator.py    # Main generator script
+│   └── run-hexagonal-architecture-generator.sh # Execution script
+├── templates/
 │   └── java/
 │       ├── pojo.mustache                  # DTOs and Domain Models
 │       ├── apiService.mustache            # Application Services
@@ -159,27 +159,27 @@ boiler-plate-code-gen/
 ### Basic Usage
 
 ```bash
-python3 scripts/clean-architecture-generator.py <config_path> <templates_dir> <output_dir>
+python3 scripts/hexagonal-architecture-generator.py <config_path> <templates_dir> <output_dir>
 ```
 
 ### Example
 
 ```bash
-python3 scripts/clean-architecture-generator.py \
-  openapi-templates/java/template-config.json \
-  openapi-templates/java \
+python3 scripts/hexagonal-architecture-generator.py \
+  templates/java/template-config.json \
+  templates/java \
   generated-project
 ```
 
 ### Using the Shell Script
 
 ```bash
-./scripts/run-clean-architecture-generator.sh
+./scripts/run-hexagonal-architecture-generator.sh
 ```
 
 ## Generated Architecture
 
-The generator creates a complete Clean Architecture project with proper package structure:
+The generator creates a complete Hexagonal Architecture project with proper package structure:
 
 ```
 generated-project/
@@ -206,26 +206,25 @@ generated-project/
 
 ### Architecture Layers
 
-#### Domain Layer (`domain/`)
+#### Domain Layer (`domain/`) - The Core
 - **Models**: Pure POJOs without framework dependencies
 - **Input Ports**: Use case interfaces (e.g., `CreateUserUseCase`)
 - **Output Ports**: Repository interfaces (e.g., `UserRepositoryPort`)
 
-#### Application Layer (`application/`)
+#### Application Layer (`application/`) - Orchestration
 - **Services**: Use case implementations with business logic
 - **DTOs**: Request/Response objects with validation
 - **Mappers**: MapStruct interfaces for transformations
 
-#### Infrastructure Layer (`infrastructure/`)
-- **REST Controllers**: HTTP endpoints and request handling
+#### Infrastructure Layer (`infrastructure/`) - Adapters
+- **Input Adapters**: REST controllers for HTTP handling
+- **Output Adapters**: JPA repositories and database adapters
 - **JPA Entities**: Database entities with annotations
-- **JPA Repositories**: Spring Data repositories
-- **Repository Adapters**: Implementations of domain ports
 - **Configuration**: Spring Boot configuration classes
 
 ## Template Mapping Strategy
 
-The generator intelligently maps existing templates to Clean Architecture layers:
+The generator intelligently maps existing templates to Hexagonal Architecture layers:
 
 | Template | Domain Layer | Application Layer | Infrastructure Layer |
 |----------|-------------|-------------------|---------------------|
@@ -238,7 +237,7 @@ The generator intelligently maps existing templates to Clean Architecture layers
 
 ## Configuration
 
-### Template Configuration (`openapi-templates/java/template-config.json`)
+### Template Configuration (`templates/java/template-config.json`)
 
 Key configuration options:
 ```json
@@ -363,10 +362,11 @@ Generated REST API endpoints:
 
 The generator ensures:
 
-1. **Dependency Rule**: Dependencies point inward toward the domain
-2. **Interface Segregation**: Small, focused interfaces for each use case
-3. **Single Responsibility**: Each class has one reason to change
-4. **Dependency Inversion**: High-level modules don't depend on low-level modules
+1. **Dependency Rule**: Dependencies point inward toward the domain (hexagon center)
+2. **Ports and Adapters**: External communication only through well-defined interfaces
+3. **Interface Segregation**: Small, focused interfaces for each use case
+4. **Single Responsibility**: Each class has one reason to change
+5. **Dependency Inversion**: High-level modules don't depend on low-level modules
 
 ## Development Workflow
 
@@ -401,7 +401,7 @@ operations = ["CreateUser", "GetUser", "UpdateUser", "DeleteUser", "SearchUsers"
 ```
 
 ### Modifying Templates
-1. Edit Mustache templates in `openapi-templates/java/`
+1. Edit Mustache templates in `templates/java/`
 2. Regenerate project to apply changes
 
 ### Extending Entities
@@ -410,11 +410,11 @@ operations = ["CreateUser", "GetUser", "UpdateUser", "DeleteUser", "SearchUsers"
 
 ## Best Practices
 
-1. **Keep Domain Pure**: Domain layer should have no external dependencies
-2. **Use Ports and Adapters**: All external communication goes through interfaces
+1. **Keep Domain Pure**: Domain layer should have no external dependencies (hexagon center)
+2. **Use Ports and Adapters**: All external communication goes through well-defined interfaces
 3. **Test Each Layer**: Unit test domain logic, integration test adapters
 4. **Follow Naming Conventions**: UseCase, Port, Adapter, Dbo suffixes
-5. **Maintain Dependency Direction**: Always point toward the domain
+5. **Maintain Dependency Direction**: Always point toward the domain (inward to hexagon center)
 
 ## Troubleshooting
 
@@ -449,9 +449,10 @@ The generator can be extended to:
 
 - Parse OpenAPI specifications directly
 - Generate test classes
-- Add more architectural patterns
+- Add more hexagonal patterns
 - Support different frameworks (Quarkus, Micronaut)
 - Generate documentation
+- Add more adapter types (messaging, external APIs)
 
 ## Contributing
 

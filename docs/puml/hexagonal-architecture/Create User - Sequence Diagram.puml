@@ -1,6 +1,6 @@
 @startuml CreateUser
 !theme plain
-title Create User - Clean Architecture Flow
+title Create User - Hexagonal Architecture Flow
 
 actor Client
 participant "UserController\n(Input Adapter)" as Controller

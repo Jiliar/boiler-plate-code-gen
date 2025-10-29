@@ -1,6 +1,6 @@
 @startuml UpdateUser
 !theme plain
-title Update User - Clean Architecture Flow
+title Update User - Hexagonal Architecture Flow
 
 actor Client
 participant "UserController\n(Input Adapter)" as Controller
