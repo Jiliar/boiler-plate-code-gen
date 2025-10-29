@@ -597,6 +597,7 @@ def run_command(cmd):
 def main():
 
     print("📝 Generating OpenAPI from Smithy...")
+    run_command("smithy clean")
     run_command("smithy build")
 
     if len(sys.argv) != 4:
