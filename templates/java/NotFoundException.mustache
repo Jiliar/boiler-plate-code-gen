@@ -1,26 +1,33 @@
-package {{infra_config}};
-
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
+package {{packageName}};
 
 /**
  * Exception thrown when a requested resource is not found.
  * <p>
- * This exception automatically returns HTTP 404 status code
- * when thrown from controllers or services.
+ * This exception is used in the Hexagonal Architecture infrastructure layer
+ * to indicate that a requested entity or resource could not be located.
  * </p>
  * 
- * @author {{author}}
- * @version {{version}}
+ * @author {{#project}}{{author}}{{/project}}
+ * @version {{#project}}{{version}}{{/project}}
  */
-@ResponseStatus(HttpStatus.NOT_FOUND)
-public class NotFoundException extends RuntimeException {
-    
-    public NotFoundException(String message) {
+public class {{classname}} extends RuntimeException {
+
+    /**
+     * Constructs a new {{classname}} with the specified detail message.
+     *
+     * @param message the detail message
+     */
+    public {{classname}}(String message) {
         super(message);
     }
-    
-    public NotFoundException(String message, Throwable cause) {
+
+    /**
+     * Constructs a new {{classname}} with the specified detail message and cause.
+     *
+     * @param message the detail message
+     * @param cause the cause
+     */
+    public {{classname}}(String message, Throwable cause) {
         super(message, cause);
     }
 }

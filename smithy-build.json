@@ -16,7 +16,7 @@
     ]
   },
   "projections": {
-    "user_service": {
+    "back-ms-users": {
       "plugins": {
         "model": {
           "imports": [

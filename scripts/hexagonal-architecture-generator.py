@@ -16,25 +16,53 @@ import subprocess
 import glob
 
 class HexagonalArchitectureGenerator:
-    def __init__(self, config_path: str, templates_dir: str, output_dir: str):
+    def __init__(self, config_path: str, templates_dir: str, project_config: Dict[str, Any]):
+        """
+        Initialize the Hexagonal Architecture Generator.
+        
+        Args:
+            config_path: Path to the configuration JSON file
+            templates_dir: Directory containing Mustache templates
+            project_config: Single project configuration from the array
+        """
         self.config_path = config_path
         self.templates_dir = Path(templates_dir)
-        self.output_dir = Path(output_dir)
-        self.config = self._load_config()
-        self.base_package = self.config['configOptions']['basePackage']
+        self.project_config = project_config
+        self.output_dir = Path(project_config['project']['name'])
+        self.base_package = project_config['configOptions']['basePackage']
         self.target_packages = self._define_target_packages()
         self.mustache_context = self._build_mustache_context()
         self.openapi_spec = self._load_openapi_spec()
         
-    def _load_config(self) -> Dict[str, Any]:
-        """Load template configuration from JSON file."""
-        with open(self.config_path, 'r') as f:
+    @staticmethod
+    def load_projects_config(config_path: str) -> List[Dict[str, Any]]:
+        """
+        Load projects configuration from JSON file.
+        
+        Returns:
+            List of project configurations
+            
+        Raises:
+            FileNotFoundError: If configuration file doesn't exist
+            json.JSONDecodeError: If configuration file is invalid JSON
+        """
+        with open(config_path, 'r') as f:
             return json.load(f)
     
+
+    
     def _define_target_packages(self) -> Dict[str, str]:
-        """Define Hexagonal Architecture package structure."""
+        """
+        Define Hexagonal Architecture package structure.
+        
+        Returns:
+            Dictionary mapping package types to their full package names
+        """
         return {
             "root": self.base_package,
+            
+            # Utils Layer
+            "utils": f"{self.base_package}.utils",
             
             # Domain Layer
             "domain_model": f"{self.base_package}.domain.model",
@@ -48,6 +76,7 @@ class HexagonalArchitectureGenerator:
             
             # Infrastructure Layer
             "infra_config": f"{self.base_package}.infrastructure.config",
+            "infra_config_exceptions": f"{self.base_package}.infrastructure.config.exceptions",
             "infra_adapters_input_rest": f"{self.base_package}.infrastructure.adapters.input.rest",
             "infra_adapters_output_persistence": f"{self.base_package}.infrastructure.adapters.output.persistence",
             "infra_entity": f"{self.base_package}.infrastructure.adapters.output.persistence.entity",
@@ -56,31 +85,93 @@ class HexagonalArchitectureGenerator:
         }
     
     def _load_openapi_spec(self) -> Dict[str, Any]:
-        """Load OpenAPI specification from Smithy build output."""
-        openapi_files = glob.glob("build/smithy/*/openapi/*.openapi.json")
+        """
+        Load OpenAPI specification from Smithy build output.
+        
+        Returns:
+            Dictionary containing the OpenAPI specification
+            
+        Raises:
+            FileNotFoundError: If no OpenAPI spec files are found
+        """
+        project_folder = self.project_config['project']['folder']
+        openapi_files = glob.glob(f"build/smithy/{project_folder}/openapi/*.openapi.json")
         if not openapi_files:
-            raise FileNotFoundError("No OpenAPI spec found. Run 'smithy build' first.")
+            raise FileNotFoundError(f"No OpenAPI spec found for project {project_folder}. Run 'smithy build' first.")
         
         with open(openapi_files[0], 'r') as f:
             return json.load(f)
     
     def _build_mustache_context(self) -> Dict[str, Any]:
-        """Build global Mustache context with all configuration options."""
-        context = self.config.copy()
-        context.update(self.config['configOptions'])
+        """
+        Build global Mustache context with all configuration options.
+        
+        Returns:
+            Dictionary containing all template variables and configuration
+        """
+        context = self.project_config.copy()
+        context.update(self.project_config['configOptions'])
         context.update(self.target_packages)
+        
+        # Add project parameters from project config
+        if 'project' in self.project_config:
+            context['author'] = self.project_config['project'].get('author', 'Generator')
+            context['version'] = self.project_config['project'].get('version', '1.0.0')
+            context['artifactVersion'] = self.project_config['project'].get('version', '1.0.0')
+        
+        # Set database type flags for conditional rendering - default to H2 if empty
+        db_config = self.project_config.get('database', {})
+        db_type = db_config.get('sgbd', 'h2').lower() if db_config else 'h2'
+        context.update({
+            'database': {
+                **db_config,
+                'postgresql': db_type == 'postgresql',
+                'mysql': db_type == 'mysql', 
+                'oracle': db_type == 'oracle',
+                'sqlserver': db_type == 'sqlserver' or db_type == 'msserver',
+                'h2': not db_type or db_type == 'h2'  # Default to H2 if empty
+            },
+            'smithyModel': 'user-service.smithy',
+            'generatorVersion': '1.0.0'
+        })
+        
         return context
     
     def _get_package_path(self, package_name: str) -> Path:
-        """Convert package name to file system path."""
+        """
+        Convert package name to file system path.
+        
+        Args:
+            package_name: Java package name (e.g., 'com.example.service')
+            
+        Returns:
+            Path object representing the directory structure
+        """
         return Path("src/main/java") / package_name.replace(".", "/")
     
     def _ensure_directory(self, path: Path):
-        """Create directory if it doesn't exist."""
+        """
+        Create directory if it doesn't exist.
+        
+        Args:
+            path: Path object representing the directory to create
+        """
         path.mkdir(parents=True, exist_ok=True)
     
     def _render_template(self, template_name: str, context: Dict[str, Any]) -> str:
-        """Render Mustache template with given context."""
+        """
+        Render Mustache template with given context.
+        
+        Args:
+            template_name: Name of the template file
+            context: Dictionary containing template variables
+            
+        Returns:
+            Rendered template content as string
+            
+        Raises:
+            FileNotFoundError: If template file doesn't exist
+        """
         template_path = self.templates_dir / template_name
         if not template_path.exists():
             raise FileNotFoundError(f"Template not found: {template_path}")
@@ -101,14 +192,30 @@ class HexagonalArchitectureGenerator:
         return rendered
     
     def _write_file(self, file_path: Path, content: str):
-        """Write content to file, creating directories as needed."""
+        """
+        Write content to file, creating directories as needed.
+        
+        Args:
+            file_path: Path where the file will be written
+            content: String content to write to the file
+        """
         self._ensure_directory(file_path.parent)
         with open(file_path, 'w') as f:
             f.write(content)
         print(f"Generated: {file_path}")
     
     def _convert_openapi_property(self, prop_name: str, prop_data: Dict[str, Any], required_fields: List[str]) -> Dict[str, Any]:
-        """Convert OpenAPI property to Java property."""
+        """
+        Convert OpenAPI property to Java property.
+        
+        Args:
+            prop_name: Name of the property
+            prop_data: OpenAPI property definition
+            required_fields: List of required field names
+            
+        Returns:
+            Dictionary containing Java property information
+        """
         prop_type = prop_data.get('type', 'string')
         prop_format = prop_data.get('format')
         
@@ -180,7 +287,11 @@ class HexagonalArchitectureGenerator:
         }
     
     def generate_entity_status_enum(self):
-        """Generate EntityStatus enum for domain layer."""
+        """
+        Generate EntityStatus enum for domain layer.
+        
+        Creates an enum class representing entity status values.
+        """
         context = self.mustache_context.copy()
         context.update({
             'packageName': self.target_packages['domain_model'],
@@ -192,7 +303,13 @@ class HexagonalArchitectureGenerator:
         self._write_file(file_path, content)
     
     def generate_domain_model(self, entity_name: str, schema_data: Dict[str, Any]):
-        """Generate domain model (pure POJO) from OpenAPI schema."""
+        """
+        Generate domain model (pure POJO) from OpenAPI schema.
+        
+        Args:
+            entity_name: Name of the entity (e.g., 'User')
+            schema_data: OpenAPI schema definition for the entity
+        """
         context = self.mustache_context.copy()
         
         # Extract properties and build vars (without validation annotations for domain)
@@ -227,7 +344,13 @@ class HexagonalArchitectureGenerator:
         self._write_file(file_path, content)
     
     def generate_dto(self, schema_name: str, schema_data: Dict[str, Any]):
-        """Generate application DTOs from OpenAPI schema."""
+        """
+        Generate application DTOs from OpenAPI schema.
+        
+        Args:
+            schema_name: Name of the DTO class
+            schema_data: OpenAPI schema definition
+        """
         context = self.mustache_context.copy()
         
         # Extract properties and build vars
@@ -258,7 +381,13 @@ class HexagonalArchitectureGenerator:
         self._write_file(file_path, content)
     
     def generate_entity(self, entity_name: str, schema_data: Dict[str, Any] = None):
-        """Generate JPA entity (DBO) from OpenAPI schema."""
+        """
+        Generate JPA entity (DBO) from OpenAPI schema.
+        
+        Args:
+            entity_name: Name of the entity
+            schema_data: Optional OpenAPI schema definition
+        """
         context = self.mustache_context.copy()
         
         if schema_data:
@@ -300,7 +429,12 @@ class HexagonalArchitectureGenerator:
         self._write_file(file_path, content)
     
     def generate_domain_port_output(self, entity_name: str):
-        """Generate domain repository port (interface)."""
+        """
+        Generate domain repository port (interface).
+        
+        Args:
+            entity_name: Name of the entity for which to create the port
+        """
         context = self.mustache_context.copy()
         context.update({
             'packageName': self.target_packages['domain_ports_output'],
@@ -316,7 +450,12 @@ class HexagonalArchitectureGenerator:
         self._write_file(file_path, content)
     
     def generate_jpa_repository(self, entity_name: str):
-        """Generate Spring Data JPA repository."""
+        """
+        Generate Spring Data JPA repository.
+        
+        Args:
+            entity_name: Name of the entity for the repository
+        """
         context = self.mustache_context.copy()
         context.update({
             'packageName': self.target_packages['infra_repository'],
@@ -331,7 +470,12 @@ class HexagonalArchitectureGenerator:
         self._write_file(file_path, content)
     
     def generate_repository_adapter(self, entity_name: str):
-        """Generate repository adapter (implements domain port)."""
+        """
+        Generate repository adapter (implements domain port).
+        
+        Args:
+            entity_name: Name of the entity for the adapter
+        """
         context = self.mustache_context.copy()
         context.update({
             'packageName': self.target_packages['infra_adapter'],
@@ -350,7 +494,12 @@ class HexagonalArchitectureGenerator:
         self._write_file(file_path, content)
     
     def generate_use_case_port(self, operation_name: str):
-        """Generate use case port (domain input interface)."""
+        """
+        Generate use case port (domain input interface).
+        
+        Args:
+            operation_name: Name of the operation (e.g., 'CreateUser')
+        """
         context = self.mustache_context.copy()
         
         # Determine request/response types based on operation
@@ -373,7 +522,12 @@ class HexagonalArchitectureGenerator:
         self._write_file(file_path, content)
     
     def generate_application_service(self, operation_name: str):
-        """Generate application service (use case implementation)."""
+        """
+        Generate application service (use case implementation).
+        
+        Args:
+            operation_name: Name of the operation to implement
+        """
         context = self.mustache_context.copy()
         
         # Determine operation type and entity
@@ -396,6 +550,7 @@ class HexagonalArchitectureGenerator:
             'isGet': operation_name.startswith('Get'),
             'isUpdate': operation_name.startswith('Update'),
             'isDelete': operation_name.startswith('Delete'),
+            'isListOperation': operation_name.startswith('List') or 'List' in operation_name,
             'isApplicationService': True
         })
         
@@ -404,7 +559,12 @@ class HexagonalArchitectureGenerator:
         self._write_file(file_path, content)
     
     def generate_rest_controller(self, api_name: str):
-        """Generate REST controller (input adapter)."""
+        """
+        Generate REST controller (input adapter).
+        
+        Args:
+            api_name: Name of the API/entity for the controller
+        """
         context = self.mustache_context.copy()
         context.update({
             'packageName': self.target_packages['infra_adapters_input_rest'],
@@ -422,12 +582,18 @@ class HexagonalArchitectureGenerator:
         self._write_file(file_path, content)
     
     def generate_mapper(self, entity_name: str):
-        """Generate mapper for entity transformations."""
+        """
+        Generate mapper for entity transformations.
+        
+        Args:
+            entity_name: Name of the entity for mapping operations
+        """
         context = self.mustache_context.copy()
         context.update({
             'packageName': self.target_packages['application_mapper'],
             'classname': f"{entity_name}Mapper",
             'entityName': entity_name,
+            'entityVarName': entity_name.lower(),
             'dboName': f"{entity_name}Dbo",
             'isMapper': True
         })
@@ -437,9 +603,13 @@ class HexagonalArchitectureGenerator:
         self._write_file(file_path, content)
     
     def generate_main_application(self):
-        """Generate Spring Boot main application class."""
+        """
+        Generate Spring Boot main application class.
+        
+        Creates the main entry point class with @SpringBootApplication annotation.
+        """
         context = self.mustache_context.copy()
-        main_class_name = self.config['configOptions']['mainClass']  # UserServiceApplication
+        main_class_name = self.project_config['configOptions']['mainClass']  # UserServiceApplication
         context.update({
             'packageName': self.target_packages['root'],
             'classname': main_class_name  # UserServiceApplication (no extra Application)
@@ -450,7 +620,12 @@ class HexagonalArchitectureGenerator:
         self._write_file(file_path, content)
     
     def generate_configuration(self):
-        """Generate Spring configuration classes."""
+        """
+        Generate Spring configuration classes.
+        
+        Creates multiple configuration classes including security, OpenAPI,
+        exception handling, and application configuration.
+        """
         # Generate main application configuration
         context = self.mustache_context.copy()
         context.update({
@@ -484,42 +659,117 @@ class HexagonalArchitectureGenerator:
         
         # Generate global exception handler
         context.update({
+            'packageName': self.target_packages['infra_config_exceptions'],
             'classname': 'GlobalExceptionHandler'
         })
         
         content = self._render_template('GlobalExceptionHandler.mustache', context)
-        file_path = self.output_dir / self._get_package_path(self.target_packages['infra_config']) / "GlobalExceptionHandler.java"
+        file_path = self.output_dir / self._get_package_path(self.target_packages['infra_config_exceptions']) / "GlobalExceptionHandler.java"
         self._write_file(file_path, content)
         
         # Generate NotFoundException
         context.update({
+            'packageName': self.target_packages['infra_config_exceptions'],
             'classname': 'NotFoundException'
         })
         
         content = self._render_template('NotFoundException.mustache', context)
-        file_path = self.output_dir / self._get_package_path(self.target_packages['infra_config']) / "NotFoundException.java"
+        file_path = self.output_dir / self._get_package_path(self.target_packages['infra_config_exceptions']) / "NotFoundException.java"
+        self._write_file(file_path, content)
+        
+        # Generate LoggingUtils
+        context.update({
+            'packageName': self.target_packages['utils'],
+            'classname': 'LoggingUtils'
+        })
+        
+        content = self._render_template('LoggingUtils.mustache', context)
+        file_path = self.output_dir / self._get_package_path(self.target_packages['utils']) / "LoggingUtils.java"
         self._write_file(file_path, content)
     
     def generate_pom_xml(self):
-        """Generate Maven POM file."""
+        """
+        Generate Maven POM file.
+        
+        Creates the project's Maven configuration with dependencies and build settings.
+        """
         content = self._render_template('pom.xml.mustache', self.mustache_context)
         file_path = self.output_dir / "pom.xml"
         self._write_file(file_path, content)
     
     def generate_application_properties(self):
-        """Generate application.properties file."""
+        """
+        Generate application.properties file.
+        
+        Creates Spring Boot configuration properties including database settings.
+        """
         content = self._render_template('application.properties.mustache', self.mustache_context)
         file_path = self.output_dir / "src/main/resources/application.properties"
         self._write_file(file_path, content)
     
     def generate_readme(self):
-        """Generate project README file."""
+        """
+        Generate project README file.
+        
+        Creates documentation with project information and usage instructions.
+        """
         content = self._render_template('README.md.mustache', self.mustache_context)
         file_path = self.output_dir / "README.md"
         self._write_file(file_path, content)
     
+    def generate_docker_compose(self):
+        """
+        Generate docker-compose.yml file for database deployment.
+        
+        Creates Docker Compose configuration for running the database container.
+        """
+        content = self._render_template('docker-compose.yml.mustache', self.mustache_context)
+        file_path = self.output_dir / "docker-compose.yml"
+        self._write_file(file_path, content)
+    
+    def generate_dockerfile(self):
+        """
+        Generate Dockerfile for service containerization.
+        
+        Creates Docker configuration for building and running the application container.
+        """
+        content = self._render_template('Dockerfile.mustache', self.mustache_context)
+        file_path = self.output_dir / "Dockerfile"
+        self._write_file(file_path, content)
+    
+    def generate_maven_wrapper(self):
+        """
+        Generate Maven wrapper scripts and properties.
+        
+        Creates mvnw scripts and .mvn/wrapper/maven-wrapper.properties.
+        """
+        # Generate Unix/Linux/macOS wrapper
+        content = self._render_template('mvnw.mustache', self.mustache_context)
+        file_path = self.output_dir / "mvnw"
+        self._write_file(file_path, content)
+        # Make mvnw executable
+        import os
+        os.chmod(file_path, 0o755)
+        
+        # Generate Windows wrapper
+        content = self._render_template('mvnw.cmd.mustache', self.mustache_context)
+        file_path = self.output_dir / "mvnw.cmd"
+        self._write_file(file_path, content)
+        
+        # Generate Maven wrapper properties
+        wrapper_dir = self.output_dir / ".mvn" / "wrapper"
+        self._ensure_directory(wrapper_dir)
+        content = self._render_template('maven-wrapper.properties.mustache', self.mustache_context)
+        file_path = wrapper_dir / "maven-wrapper.properties"
+        self._write_file(file_path, content)
+    
     def generate_complete_project(self):
-        """Generate complete Hexagonal Architecture project from OpenAPI spec."""
+        """
+        Generate complete Hexagonal Architecture project from OpenAPI spec.
+        
+        Orchestrates the generation of all project components including domain models,
+        application services, infrastructure adapters, and supporting files.
+        """
         print("Generating Hexagonal Architecture Spring Boot project from OpenAPI spec...")
         
         # Extract data from OpenAPI spec
@@ -576,8 +826,14 @@ class HexagonalArchitectureGenerator:
         self.generate_pom_xml()
         self.generate_application_properties()
         self.generate_readme()
+        self.generate_docker_compose()
+        self.generate_dockerfile()
+        self.generate_maven_wrapper()
         
         print(f"\nHexagonal Architecture project generated successfully in: {self.output_dir}")
+        project_info = self.project_config.get('project', {})
+        print(f"Project: {project_info.get('name', 'generated-project')} v{project_info.get('version', '1.0.0')}")
+        print(f"Description: {project_info.get('description', 'Generated project')}")
         print(f"Generated {len(schemas)} DTOs from OpenAPI schemas")
         print(f"Generated {len(operations)} use cases from operations")
         print("\nProject structure follows Hexagonal Architecture principles:")
@@ -587,6 +843,18 @@ class HexagonalArchitectureGenerator:
 
 
 def run_command(cmd):
+    """
+    Execute a shell command and return its output.
+    
+    Args:
+        cmd: Shell command to execute
+        
+    Returns:
+        Command output as string
+        
+    Raises:
+        SystemExit: If command fails
+    """
     print(f"Running: {cmd}")
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     if result.returncode != 0:
@@ -595,24 +863,43 @@ def run_command(cmd):
     return result.stdout
 
 def main():
-
+    """
+    Main entry point for the generator.
+    
+    Handles command line arguments, loads configuration, and orchestrates
+    the project generation process for multiple projects.
+    """
     print("📝 Generating OpenAPI from Smithy...")
     run_command("smithy clean")
     run_command("smithy build")
 
-    if len(sys.argv) != 4:
-        print("Usage: python hexagonal-architecture-generator.py <config_path> <templates_dir> <output_dir>")
-        sys.exit(1)
+    if len(sys.argv) > 1 and sys.argv[1] in ['-h', '--help']:
+        print("Usage: python hexagonal-architecture-generator.py [templates_dir]")
+        print("Example: python hexagonal-architecture-generator.py templates/java")
+        print("Config: scripts/config/params.json (array of project configurations)")
+        sys.exit(0)
     
-    config_path = sys.argv[1]
-    templates_dir = sys.argv[2]
-    output_dir = sys.argv[3]
+    config_path = "scripts/config/params.json"
+    templates_dir = sys.argv[1] if len(sys.argv) > 1 else "templates/java"
     
     try:
-        generator = HexagonalArchitectureGenerator(config_path, templates_dir, output_dir)
-        generator.generate_complete_project()
+        # Load all project configurations
+        projects_config = HexagonalArchitectureGenerator.load_projects_config(config_path)
+        
+        print(f"Found {len(projects_config)} project(s) to generate...")
+        
+        # Generate each project
+        for i, project_config in enumerate(projects_config, 1):
+            project_name = project_config['project']['name']
+            print(f"\n[{i}/{len(projects_config)}] Generating project: {project_name}")
+            
+            generator = HexagonalArchitectureGenerator(config_path, templates_dir, project_config)
+            generator.generate_complete_project()
+            
+        print(f"\n✅ Successfully generated {len(projects_config)} project(s)!")
+        
     except Exception as e:
-        print(f"Error generating project: {e}")
+        print(f"Error generating projects: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

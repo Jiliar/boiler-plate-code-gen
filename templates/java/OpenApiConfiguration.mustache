@@ -26,8 +26,8 @@ public class OpenApiConfiguration {
     public OpenAPI userServiceOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("User Service API")
-                        .description("Generated Spring Boot application from Smithy model")
-                        .version("1.0.0"));
+                        .title("{{project.name}}")
+                        .description("{{project.description}}")
+                        .version("{{project.version}}"));
     }
 }

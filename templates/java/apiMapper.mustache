@@ -33,25 +33,25 @@ public interface {{classname}} {
     {{classname}} INSTANCE = Mappers.getMapper({{classname}}.class);
 
     // Domain to DBO mappings
-    @Mapping(source = "userId", target = "id")
+    @Mapping(source = "{{entityVarName}}Id", target = "id")
     {{entityName}}Dbo toDbo({{entityName}} domain);
     
-    @Mapping(source = "id", target = "userId")
+    @Mapping(source = "id", target = "{{entityVarName}}Id")
     {{entityName}} toDomain({{entityName}}Dbo dbo);
     List<{{entityName}}> toDomainList(List<{{entityName}}Dbo> dbos);
 
     // Domain to DTO mappings
     
-    @Mapping(target = "userId", expression = "java(java.util.UUID.randomUUID().toString())")
+    @Mapping(target = "{{entityVarName}}Id", expression = "java(java.util.UUID.randomUUID().toString())")
     @Mapping(target = "status", constant = "ACTIVE")
     @Mapping(target = "createdAt", expression = "java(java.time.Instant.now().toString())")
     @Mapping(target = "updatedAt", ignore = true)
-    {{entityName}} fromCreateRequest(CreateUserRequestContent request);
+    {{entityName}} fromCreateRequest(Create{{entityName}}RequestContent request);
     @Mapping(target = "updatedAt", expression = "java(java.time.Instant.now().toString())")
-    @Mapping(target = "userId", ignore = true)
+    @Mapping(target = "{{entityVarName}}Id", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    {{entityName}} fromUpdateRequest(UpdateUserRequestContent request);
+    {{entityName}} fromUpdateRequest(Update{{entityName}}RequestContent request);
     
     // DTO to Domain mappings
     List<{{entityName}}Response> toResponseList(List<{{entityName}}> domains);
@@ -60,11 +60,11 @@ public interface {{classname}} {
     {{entityName}}Response toResponse({{entityName}} domain);
     
     // Response mappings for DTOs
-    default CreateUserResponseContent toCreateResponse({{entityName}} domain) {
+    default Create{{entityName}}ResponseContent toCreateResponse({{entityName}} domain) {
         if (domain == null) return null;
-        return CreateUserResponseContent.builder()
-            .userId(domain.getUserId())
-            .username(domain.getUsername())
+        return Create{{entityName}}ResponseContent.builder()
+            .userId(domain.get{{entityName}}Id())
+            .username(domain.get{{entityName}}name())
             .email(domain.getEmail())
             .firstName(domain.getFirstName())
             .lastName(domain.getLastName())
@@ -74,11 +74,11 @@ public interface {{classname}} {
             .build();
     }
     
-    default GetUserResponseContent toGetResponse({{entityName}} domain) {
+    default Get{{entityName}}ResponseContent toGetResponse({{entityName}} domain) {
         if (domain == null) return null;
-        return GetUserResponseContent.builder()
-            .userId(domain.getUserId())
-            .username(domain.getUsername())
+        return Get{{entityName}}ResponseContent.builder()
+            .userId(domain.get{{entityName}}Id())
+            .username(domain.get{{entityName}}name())
             .email(domain.getEmail())
             .firstName(domain.getFirstName())
             .lastName(domain.getLastName())
@@ -88,11 +88,11 @@ public interface {{classname}} {
             .build();
     }
     
-    default UpdateUserResponseContent toUpdateResponse({{entityName}} domain) {
+    default Update{{entityName}}ResponseContent toUpdateResponse({{entityName}} domain) {
         if (domain == null) return null;
-        return UpdateUserResponseContent.builder()
-            .userId(domain.getUserId())
-            .username(domain.getUsername())
+        return Update{{entityName}}ResponseContent.builder()
+            .userId(domain.get{{entityName}}Id())
+            .username(domain.get{{entityName}}name())
             .email(domain.getEmail())
             .firstName(domain.getFirstName())
             .lastName(domain.getLastName())
@@ -103,10 +103,10 @@ public interface {{classname}} {
     }
 
     // List response mapping
-    default ListUsersResponseContent toListResponse(List<{{entityName}}> domains) {
+    default List{{entityName}}sResponseContent toListResponse(List<{{entityName}}> domains) {
         if (domains == null) return null;
-        return ListUsersResponseContent.builder()
-            .users(toResponseList(domains))
+        return List{{entityName}}sResponseContent.builder()
+            .{{entityVarName}}s(toResponseList(domains))
             .page(BigDecimal.valueOf(1))
             .size(BigDecimal.valueOf(domains.size()))
             .total(BigDecimal.valueOf(domains.size()))

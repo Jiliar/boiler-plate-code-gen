@@ -5,12 +5,15 @@ import {{domain_ports_output}}.{{entityName}}RepositoryPort;
 import {{application_dto}}.*;
 import {{domain_model}}.{{entityName}};
 import {{application_mapper}}.{{entityName}}Mapper;
+import {{infra_config_exceptions}}.NotFoundException;
+import {{utils}}.LoggingUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Transactional;{{#operationName}}
+{{#isListOperation}}
 import java.util.List;
-import java.math.BigDecimal;
+import java.math.BigDecimal;{{/isListOperation}}
+{{/operationName}}
 
 /**
  * Application service implementing {{operationName}} use case.
@@ -24,23 +27,24 @@ import java.math.BigDecimal;
  * @author {{author}}
  * @version {{version}}
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class {{classname}} implements {{operationName}}UseCase {
 
+    private static final LoggingUtils logger = LoggingUtils.getLogger({{classname}}.class);
+    
     private final {{entityName}}RepositoryPort {{entityVarName}}RepositoryPort;
     private final {{entityName}}Mapper {{entityVarName}}Mapper;
 
     {{#isUpdate}}
     @Override
     public {{returnType}} execute(String userId, {{requestType}} request) {
-        log.info("Executing {{operationName}} with userId: {} and request: {}", userId, request);
+        logger.info("Executing {{operationName}} with userId: {} and request: {}", userId, request);
         
         try {
             {{entityName}} existing{{entityName}} = {{entityVarName}}RepositoryPort.findById(userId)
-                .orElseThrow(() -> new {{infra_config}}.NotFoundException("{{entityName}} not found"));
+                .orElseThrow(() -> new NotFoundException("{{entityName}} not found"));
             
             // Update existing entity with request data
             {{entityName}} updated{{entityName}} = {{entityVarName}}Mapper.fromUpdateRequest(request);
@@ -50,13 +54,14 @@ public class {{classname}} implements {{operationName}}UseCase {
             updated{{entityName}}.setStatus(existing{{entityName}}.getStatus());
             
             {{entityName}} saved{{entityName}} = {{entityVarName}}RepositoryPort.save(updated{{entityName}});
+            logger.info("{{entityName}} updated successfully with ID: {}", userId);
             
             return {{entityVarName}}Mapper.toUpdateResponse(saved{{entityName}});
-        } catch ({{infra_config}}.NotFoundException e) {
-            log.error("{{entityName}} not found in {{operationName}}: {}", e.getMessage());
+        } catch (NotFoundException e) {
+            logger.error("{{entityName}} not found in {{operationName}}", e, userId);
             throw e;
         } catch (Exception e) {
-            log.error("Error in {{operationName}}: {}", e.getMessage(), e);
+            logger.error("Error in {{operationName}}", e, userId);
             throw e;
         }
     }
@@ -64,7 +69,7 @@ public class {{classname}} implements {{operationName}}UseCase {
     {{^isUpdate}}
     @Override
     public {{returnType}} execute({{requestType}} request) {
-        log.info("Executing {{operationName}} with request: {}", request);
+        logger.info("Executing {{operationName}} with request: {}", request);
         
         try {
             {{#isCreate}}
@@ -72,21 +77,24 @@ public class {{classname}} implements {{operationName}}UseCase {
             {{entityName}} {{entityVarName}} = {{entityVarName}}Mapper.fromCreateRequest(request);
             
             {{entityName}} saved{{entityName}} = {{entityVarName}}RepositoryPort.save({{entityVarName}});
+            logger.info("{{entityName}} created successfully with ID: {}", saved{{entityName}}.getUserId());
             
             return {{entityVarName}}Mapper.toCreateResponse(saved{{entityName}});
             {{/isCreate}}
             {{#isGet}}
             {{entityName}} {{entityVarName}} = {{entityVarName}}RepositoryPort.findById(request)
-                .orElseThrow(() -> new {{infra_config}}.NotFoundException("{{entityName}} not found"));
+                .orElseThrow(() -> new NotFoundException("{{entityName}} not found"));
             
+            logger.info("{{entityName}} retrieved successfully with ID: {}", request);
             return {{entityVarName}}Mapper.toGetResponse({{entityVarName}});
             {{/isGet}}
             {{#isDelete}}
             // Verify user exists before deletion
             {{entityName}} {{entityVarName}} = {{entityVarName}}RepositoryPort.findById(request)
-                .orElseThrow(() -> new {{infra_config}}.NotFoundException("{{entityName}} not found"));
+                .orElseThrow(() -> new NotFoundException("{{entityName}} not found"));
             
             {{entityVarName}}RepositoryPort.deleteById(request);
+            logger.info("{{entityName}} deleted successfully with ID: {}", request);
             
             return {{returnType}}.builder()
                 .deleted(true)
@@ -99,6 +107,7 @@ public class {{classname}} implements {{operationName}}UseCase {
             
             // Build the list response manually
             List<{{entityName}}Response> responseList = {{entityVarName}}Mapper.toResponseList({{entityVarName}}s);
+            logger.info("Retrieved {} {{entityVarName}}s successfully", {{entityVarName}}s.size());
             
             return {{returnType}}.builder()
                 .users(responseList)
@@ -108,11 +117,11 @@ public class {{classname}} implements {{operationName}}UseCase {
                 .totalPages(BigDecimal.valueOf(1))
                 .build();
             {{/isDelete}}{{/isGet}}{{/isCreate}}
-        } catch ({{infra_config}}.NotFoundException e) {
-            log.error("{{entityName}} not found in {{operationName}}: {}", e.getMessage());
+        } catch (NotFoundException e) {
+            logger.error("{{entityName}} not found in {{operationName}}", e, request);
             throw e;
         } catch (Exception e) {
-            log.error("Error in {{operationName}}: {}", e.getMessage(), e);
+            logger.error("Error in {{operationName}}", e, request);
             throw e;
         }
     }

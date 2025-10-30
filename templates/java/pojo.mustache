@@ -6,7 +6,9 @@ import {{import}};
 import com.fasterxml.jackson.annotation.JsonProperty;
 {{#useBeanValidation}}
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 {{/useBeanValidation}}
 import lombok.Data;
 import lombok.Builder;
