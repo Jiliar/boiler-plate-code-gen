@@ -1,0 +1,249 @@
+@startuml PyJava Backend CodeGen - Sequence Diagram
+
+title PyJava Backend Code Generator v2 - Generation Flow
+
+actor User
+participant "main.py" as Main
+participant "CodeGenerator" as CG
+participant "ConfigLoader" as CL
+participant "OpenApiProcessor" as OAP
+participant "TemplateRenderer" as TR
+participant "FileManager" as FM
+participant "PropertyConverter" as PC
+database "Config Files" as Config
+database "OpenAPI Specs" as Specs
+database "Templates" as Templates
+database "Output Projects" as Output
+
+User -> Main: execute generator
+activate Main
+
+Main -> Main: run_command("smithy clean")
+Main -> Main: run_command("smithy build")
+Main -> Main: setup projects directory
+
+Main -> CL: load_projects_config()
+activate CL
+CL -> Config: read params.json
+Config --> CL: project configurations
+CL --> Main: projects_config[]
+deactivate CL
+
+loop for each project_config
+    Main -> CG: new CodeGenerator(templates_dir, project_config)
+    activate CG
+    
+    CG -> CL: build_package_structure()
+    activate CL
+    CL --> CG: target_packages
+    deactivate CL
+    
+    CG -> CL: build_mustache_context()
+    activate CL
+    CL --> CG: mustache_context
+    deactivate CL
+    
+    Main -> CG: generate_complete_project()
+    
+    ' Load OpenAPI specs
+    CG -> OAP: load_openapi_specs()
+    activate OAP
+    OAP -> Specs: read *.openapi.json files
+    Specs --> OAP: openapi_data
+    OAP --> CG: openapi_specs[]
+    deactivate OAP
+    
+    ' Extract data from specs
+    CG -> OAP: extract_schemas_and_operations()
+    activate OAP
+    OAP -> OAP: process schemas
+    OAP -> OAP: extract operations
+    OAP -> OAP: identify entities
+    OAP --> CG: (schemas, operations, entities)
+    deactivate OAP
+    
+    ' Generate DTOs (organized by service/entity)
+    loop for each schema (excluding Error DTOs)
+        CG -> PC: convert_openapi_property()
+        activate PC
+        PC --> CG: java_property_info
+        deactivate PC
+        
+        CG -> TR: render_template("pojo.mustache", context)
+        activate TR
+        TR -> Templates: read pojo.mustache
+        Templates --> TR: template_content
+        TR -> TR: render with context
+        TR --> CG: rendered_content
+        deactivate TR
+        
+        CG -> FM: write_file(dto_path, content)
+        activate FM
+        FM -> Output: create DTO file (organized by entity)
+        FM --> CG: file_created
+        deactivate FM
+    end
+    
+    ' Generate EntityStatus enum
+    CG -> TR: render_template("EntityStatus.mustache")
+    activate TR
+    TR --> CG: enum_content
+    deactivate TR
+    
+    CG -> FM: write_file(enum_path, content)
+    activate FM
+    FM -> Output: create EntityStatus enum
+    FM --> CG: file_created
+    deactivate FM
+    
+    ' Generate Domain Layer
+    loop for each entity
+        CG -> TR: render_template("pojo.mustache", domain_context)
+        activate TR
+        TR --> CG: domain_model_content
+        deactivate TR
+        
+        CG -> FM: write_file(domain_path, content)
+        activate FM
+        FM -> Output: create domain model
+        FM --> CG: file_created
+        deactivate FM
+        
+        CG -> TR: render_template("interface.mustache", port_context)
+        activate TR
+        TR --> CG: port_content
+        deactivate TR
+        
+        CG -> FM: write_file(port_path, content)
+        activate FM
+        FM -> Output: create repository port
+        FM --> CG: file_created
+        deactivate FM
+    end
+    
+    ' Generate Application Layer (Consolidated Architecture)
+    loop for each entity with CRUD operations
+        ' Generate MapStruct mapper
+        CG -> TR: render_template("apiMapper.mustache", mapper_context)
+        activate TR
+        TR --> CG: mapper_content
+        deactivate TR
+        
+        CG -> FM: write_file(mapper_path, content)
+        activate FM
+        FM -> Output: create consolidated mapper
+        FM --> CG: file_created
+        deactivate FM
+        
+        ' Generate consolidated use case interface
+        CG -> TR: render_template("consolidatedUseCase.mustache", usecase_context)
+        activate TR
+        note right: Includes all CRUD operations
+        TR --> CG: consolidated_usecase_content
+        deactivate TR
+        
+        CG -> FM: write_file(usecase_path, content)
+        activate FM
+        FM -> Output: create consolidated use case
+        FM --> CG: file_created
+        deactivate FM
+        
+        ' Generate consolidated service implementation
+        CG -> TR: render_template("consolidatedService.mustache", service_context)
+        activate TR
+        note right: Implements all CRUD + complex operations
+        TR --> CG: consolidated_service_content
+        deactivate TR
+        
+        CG -> FM: write_file(service_path, content)
+        activate FM
+        FM -> Output: create consolidated service
+        FM --> CG: file_created
+        deactivate FM
+    end
+    
+    ' Generate Infrastructure Layer
+    loop for each entity
+        ' Generate JPA entity (DBO)
+        CG -> TR: render_template("apiEntity.mustache", entity_context)
+        activate TR
+        TR --> CG: jpa_entity_content
+        deactivate TR
+        
+        CG -> FM: write_file(entity_path, content)
+        activate FM
+        FM -> Output: create JPA entity (DBO)
+        FM --> CG: file_created
+        deactivate FM
+        
+        ' Generate JPA repository + adapter
+        CG -> TR: render_template("apiRepository.mustache", repo_context)
+        activate TR
+        note right: Generates both JPA repository\nand repository adapter
+        TR --> CG: repository_content
+        deactivate TR
+        
+        CG -> FM: write_file(repo_path, content)
+        activate FM
+        FM -> Output: create JPA repository + adapter
+        FM --> CG: file_created
+        deactivate FM
+        
+        ' Generate consolidated REST controller
+        CG -> TR: render_template("apiController.mustache", controller_context)
+        activate TR
+        note right: Handles all CRUD + complex operations\nwith proper headers and validation
+        TR --> CG: controller_content
+        deactivate TR
+        
+        CG -> FM: write_file(controller_path, content)
+        activate FM
+        FM -> Output: create consolidated REST controller
+        FM --> CG: file_created
+        deactivate FM
+    end
+    
+    ' Generate Supporting Files
+    CG -> TR: render_template("Application.mustache", app_context)
+    activate TR
+    TR --> CG: main_class_content
+    deactivate TR
+    
+    CG -> FM: write_file(main_class_path, content)
+    activate FM
+    FM -> Output: create main application
+    FM --> CG: file_created
+    deactivate FM
+    
+    CG -> TR: render_template("pom.xml.mustache", pom_context)
+    activate TR
+    TR --> CG: pom_content
+    deactivate TR
+    
+    CG -> FM: write_file(pom_path, content)
+    activate FM
+    FM -> Output: create pom.xml
+    FM --> CG: file_created
+    deactivate FM
+    
+    ' Generate additional supporting files
+    CG -> CG: generate_configuration()
+    note right: ApplicationConfiguration,\nOpenApiConfiguration,\nSecurityConfiguration
+    CG -> CG: generate_application_properties()
+    CG -> CG: generate_docker_files()
+    note right: Dockerfile + docker-compose.yml
+    CG -> CG: generate_maven_wrapper()
+    CG -> CG: generate_exception_handlers()
+    note right: GlobalExceptionHandler,\nNotFoundException
+    CG -> CG: generate_utilities()
+    note right: LoggingUtils
+    
+    CG -> CG: print_generation_summary()
+    
+    deactivate CG
+end
+
+Main --> User: ✅ Successfully generated projects!
+deactivate Main
+
+@enduml

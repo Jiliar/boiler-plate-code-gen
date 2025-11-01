@@ -1,0 +1,58 @@
+@startuml ListEntities
+!theme plain
+title List Entities - Hexagonal Architecture Flow (v2 - Consolidated)
+
+actor Client
+participant "EntityController\n(Input Adapter)" as Controller
+participant "EntityService\n(Consolidated Application Service)" as Service
+participant "EntityMapper\n(Application Layer)" as Mapper
+participant "EntityRepositoryAdapter\n(Output Adapter)" as RepoAdapter
+participant "JpaEntityRepository\n(Infrastructure)" as JpaRepo
+database "Database" as DB
+
+Client -> Controller: GET /entities?page=1&size=20&search=term
+activate Controller
+
+Controller -> Service: list(page, size, search)
+activate Service
+note right: Consolidated service implementing\nEntityUseCase (all CRUD operations)
+
+Service -> RepoAdapter: findAll()
+activate RepoAdapter
+note right: In production: implement\npagination and filtering
+
+RepoAdapter -> JpaRepo: findAll()
+activate JpaRepo
+JpaRepo -> DB: SELECT * FROM entities
+DB --> JpaRepo: List<EntityDbo>
+JpaRepo --> RepoAdapter: List<EntityDbo>
+deactivate JpaRepo
+
+RepoAdapter -> Mapper: toDomainList(List<EntityDbo>)
+activate Mapper
+loop for each EntityDbo
+    Mapper -> Mapper: toDomain(EntityDbo)
+end
+Mapper --> RepoAdapter: List<Entity>
+deactivate Mapper
+
+RepoAdapter --> Service: List<Entity>
+deactivate RepoAdapter
+
+Service -> Mapper: toListResponse(List<Entity>, page, size)
+activate Mapper
+note right: Maps entities to response format\nand builds pagination metadata
+loop for each Entity
+    Mapper -> Mapper: toResponse(Entity)
+end
+note over Mapper: Build ListEntitiesResponseContent:\n- entities: List<EntityResponse>\n- page: page (default 1)\n- size: size (default 20)\n- total: BigDecimal.valueOf(entities.size())\n- totalPages: calculated
+Mapper --> Service: ListEntitiesResponseContent
+deactivate Mapper
+
+Service --> Controller: ListEntitiesResponseContent
+deactivate Service
+
+Controller --> Client: HTTP 200\n{entities: [...], pagination: {...}}
+deactivate Controller
+
+@enduml

@@ -1,0 +1,73 @@
+@startuml DeleteEntity
+!theme plain
+title Delete Entity - Hexagonal Architecture Flow (v2 - Consolidated)
+
+actor Client
+participant "EntityController\n(Input Adapter)" as Controller
+participant "EntityService\n(Consolidated Application Service)" as Service
+participant "EntityRepositoryAdapter\n(Output Adapter)" as RepoAdapter
+participant "JpaEntityRepository\n(Infrastructure)" as JpaRepo
+database "Database" as DB
+
+Client -> Controller: DELETE /entities/{entityId}
+activate Controller
+
+Controller -> Service: delete(entityId)
+activate Service
+note right: Consolidated service implementing\nEntityUseCase (all CRUD operations)
+
+Service -> RepoAdapter: findById(entityId)
+activate RepoAdapter
+note right: Verify entity exists\nbefore deletion
+
+RepoAdapter -> JpaRepo: findById(entityId)
+activate JpaRepo
+JpaRepo -> DB: SELECT * FROM entities WHERE id = ?
+DB --> JpaRepo: Optional<EntityDbo>
+JpaRepo --> RepoAdapter: Optional<EntityDbo>
+deactivate JpaRepo
+
+alt Entity Found
+    RepoAdapter -> Mapper: toDomain(EntityDbo)
+    activate Mapper
+    Mapper --> RepoAdapter: Entity
+    deactivate Mapper
+    
+    RepoAdapter --> Service: Optional<Entity>
+    deactivate RepoAdapter
+    
+    Service -> RepoAdapter: deleteById(entityId)
+    activate RepoAdapter
+    note right: Physical deletion\nfrom database
+    
+    RepoAdapter -> JpaRepo: deleteById(entityId)
+    activate JpaRepo
+    JpaRepo -> DB: DELETE FROM entities WHERE id = ?
+    DB --> JpaRepo: void
+    JpaRepo --> RepoAdapter: void
+    deactivate JpaRepo
+    
+    RepoAdapter --> Service: void
+    deactivate RepoAdapter
+    
+    note over Service: Create success response:\nDeleteEntityResponseContent.builder()\n.deleted(true)\n.message("Entity deleted successfully")\n.build()
+    
+    Service --> Controller: DeleteEntityResponseContent
+    deactivate Service
+    
+    Controller --> Client: HTTP 200\n{"deleted": true,\n "message": "Entity deleted successfully"}
+    deactivate Controller
+
+else Entity Not Found
+    RepoAdapter --> Service: Optional.empty()
+    deactivate RepoAdapter
+    
+    Service --> Controller: NotFoundException
+    deactivate Service
+    
+    Controller --> Client: HTTP 404\n{"message": "Entity not found",\n "timestamp": "...",\n "path": "/entities/{entityId}"}
+    deactivate Controller
+    note right: GlobalExceptionHandler\nhandles the exception
+end
+
+@enduml

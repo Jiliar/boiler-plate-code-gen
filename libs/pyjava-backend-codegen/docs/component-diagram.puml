@@ -1,0 +1,130 @@
+@startuml PyJava Backend CodeGen - Component Diagram
+
+!define RECTANGLE class
+
+title PyJava Backend Code Generator v2 - Component Architecture
+
+package "pyjava-backend-codegen" {
+    
+    [main.py] as Main
+    [__main__.py] as ModuleEntry
+    
+    package "Core Components" {
+        [config_loader.py] as ConfigLoader
+        [openapi_processor.py] as OpenApiProcessor
+        [template_renderer.py] as TemplateRenderer
+        [file_manager.py] as FileManager
+        [property_converter.py] as PropertyConverter
+        [code_generator.py] as CodeGenerator
+    }
+    
+    package "External Dependencies" {
+        [pystache] as Pystache
+        [json] as Json
+        [pathlib] as Pathlib
+        [subprocess] as Subprocess
+    }
+    
+    package "File System" {
+        [templates/java/*.mustache] as Templates
+        [libs/config/params.json] as Config
+        [build/smithy/*/openapi/*.json] as OpenApiSpecs
+        [projects/*] as OutputProjects
+    }
+    
+    package "Generated Architecture Layers" {
+        [Domain Layer] as Domain
+        [Application Layer] as Application
+        [Infrastructure Layer] as Infrastructure
+    }
+}
+
+' Main orchestration
+Main --> CodeGenerator : creates & orchestrates
+ModuleEntry --> Main : delegates to
+
+' CodeGenerator dependencies
+CodeGenerator --> ConfigLoader : loads configuration
+CodeGenerator --> OpenApiProcessor : processes specs
+CodeGenerator --> TemplateRenderer : renders templates
+CodeGenerator --> FileManager : manages files
+CodeGenerator --> PropertyConverter : converts properties
+
+' Component dependencies
+ConfigLoader --> Json : parses JSON
+ConfigLoader --> Config : reads from
+
+OpenApiProcessor --> Json : parses specs
+OpenApiProcessor --> OpenApiSpecs : reads from
+OpenApiProcessor --> Pathlib : path operations
+
+TemplateRenderer --> Pystache : renders templates
+TemplateRenderer --> Templates : reads from
+TemplateRenderer --> Pathlib : path operations
+
+FileManager --> Pathlib : path operations
+FileManager --> OutputProjects : writes to
+
+PropertyConverter --> [no external deps]
+
+Main --> Subprocess : runs smithy commands
+Main --> Pathlib : directory operations
+
+note right of CodeGenerator
+  Main orchestrator that coordinates
+  all components to generate the
+  complete project structure
+end note
+
+note right of ConfigLoader
+  Handles project configuration
+  and package structure definition
+end note
+
+note right of OpenApiProcessor
+  Processes OpenAPI specs and
+  extracts schemas/operations
+end note
+
+note right of TemplateRenderer
+  Renders Mustache templates
+  with context data
+end note
+
+note right of FileManager
+  Manages file system operations
+  and directory structures
+end note
+
+note right of PropertyConverter
+  Converts OpenAPI properties
+  to Java types with validation
+end note
+
+note right of Domain
+  Pure domain models and ports
+  - Domain entities (User, Movie, etc.)
+  - Use case interfaces (UserUseCase)
+  - Repository ports (UserRepositoryPort)
+end note
+
+note right of Application
+  Business logic orchestration
+  - Consolidated services (UserService)
+  - DTOs with validation
+  - MapStruct mappers
+end note
+
+note right of Infrastructure
+  External adapters
+  - REST controllers
+  - JPA entities and repositories
+  - Configuration classes
+end note
+
+' Generated architecture relationships
+CodeGenerator --> Domain : generates
+CodeGenerator --> Application : generates
+CodeGenerator --> Infrastructure : generates
+
+@enduml

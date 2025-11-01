@@ -1,0 +1,216 @@
+@startuml Hexagonal Architecture Complete Structure
+!theme plain
+title Hexagonal Architecture v2 - Complete Structure
+
+skinparam packageStyle rectangle
+skinparam component {
+    BackgroundColor<<domain>> LightBlue
+    BackgroundColor<<application>> LightGreen
+    BackgroundColor<<infrastructure>> LightYellow
+    BackgroundColor<<external>> LightGray
+}
+
+package "Domain Layer (Core)" <<domain>> {
+    package "Model" {
+        [User] as UserModel
+        [Movie] as MovieModel
+        [Rental] as RentalModel
+        [EntityStatus] as StatusEnum
+    }
+    
+    package "Input Ports" {
+        interface "UserUseCase" as UserUC
+        interface "MovieUseCase" as MovieUC
+        interface "RentalUseCase" as RentalUC
+    }
+    
+    package "Output Ports" {
+        interface "UserRepositoryPort" as UserRepoPort
+        interface "MovieRepositoryPort" as MovieRepoPort
+        interface "RentalRepositoryPort" as RentalRepoPort
+    }
+}
+
+package "Application Layer (Orchestration)" <<application>> {
+    package "Services" {
+        [UserService] as UserSvc
+        [MovieService] as MovieSvc
+        [RentalService] as RentalSvc
+    }
+    
+    package "DTOs" {
+        package "User DTOs" {
+            [CreateUserRequestContent]
+            [CreateUserResponseContent]
+            [GetUserResponseContent]
+            [UpdateUserRequestContent]
+            [UpdateUserResponseContent]
+            [DeleteUserResponseContent]
+            [ListUsersResponseContent]
+            [UserResponse]
+        }
+        
+        package "Movie DTOs" {
+            [CreateMovieRequestContent]
+            [CreateMovieResponseContent]
+            [GetMovieResponseContent]
+            [UpdateMovieRequestContent]
+            [UpdateMovieResponseContent]
+            [DeleteMovieResponseContent]
+            [ListMoviesResponseContent]
+            [MovieResponse]
+        }
+        
+        package "Rental DTOs" {
+            [CreateRentalRequestContent]
+            [CreateRentalResponseContent]
+            [GetRentalResponseContent]
+            [UpdateRentalRequestContent]
+            [UpdateRentalResponseContent]
+            [ListRentalsResponseContent]
+            [RentalResponse]
+        }
+    }
+    
+    package "Mappers" {
+        [UserMapper] as UserMap
+        [MovieMapper] as MovieMap
+        [RentalMapper] as RentalMap
+    }
+}
+
+package "Infrastructure Layer (Adapters)" <<infrastructure>> {
+    package "Input Adapters" {
+        package "REST Controllers" {
+            [UserController] as UserCtrl
+            [MovieController] as MovieCtrl
+            [RentalController] as RentalCtrl
+        }
+    }
+    
+    package "Output Adapters" {
+        package "Persistence" {
+            package "Entities (DBOs)" {
+                [UserDbo]
+                [MovieDbo]
+                [RentalDbo]
+            }
+            
+            package "JPA Repositories" {
+                [JpaUserRepository] as JpaUserRepo
+                [JpaMovieRepository] as JpaMovieRepo
+                [JpaRentalRepository] as JpaRentalRepo
+            }
+            
+            package "Repository Adapters" {
+                [UserRepositoryAdapter] as UserRepoAdapter
+                [MovieRepositoryAdapter] as MovieRepoAdapter
+                [RentalRepositoryAdapter] as RentalRepoAdapter
+            }
+        }
+    }
+    
+    package "Configuration" {
+        [ApplicationConfiguration]
+        [OpenApiConfiguration]
+        [SecurityConfiguration]
+        [GlobalExceptionHandler]
+    }
+    
+    package "Utilities" {
+        [LoggingUtils]
+    }
+}
+
+package "External Systems" <<external>> {
+    database "H2/PostgreSQL\nDatabase" as DB
+    [HTTP Clients] as Clients
+}
+
+' Domain relationships
+UserModel --> StatusEnum
+MovieModel --> StatusEnum
+RentalModel --> StatusEnum
+
+' Use Case implementations
+UserSvc ..|> UserUC : implements
+MovieSvc ..|> MovieUC : implements
+RentalSvc ..|> RentalUC : implements
+
+' Repository Port implementations
+UserRepoAdapter ..|> UserRepoPort : implements
+MovieRepoAdapter ..|> MovieRepoPort : implements
+RentalRepoAdapter ..|> RentalRepoPort : implements
+
+' Service dependencies (Dependency Inversion)
+UserSvc --> UserRepoPort : depends on
+UserSvc --> UserMap : uses
+MovieSvc --> MovieRepoPort : depends on
+MovieSvc --> MovieMap : uses
+RentalSvc --> RentalRepoPort : depends on
+RentalSvc --> RentalMap : uses
+
+' Controller dependencies
+UserCtrl --> UserUC : depends on
+MovieCtrl --> MovieUC : depends on
+RentalCtrl --> RentalUC : depends on
+
+' Repository Adapter dependencies
+UserRepoAdapter --> JpaUserRepo : uses
+UserRepoAdapter --> UserMap : uses
+MovieRepoAdapter --> JpaMovieRepo : uses
+MovieRepoAdapter --> MovieMap : uses
+RentalRepoAdapter --> JpaRentalRepo : uses
+RentalRepoAdapter --> RentalMap : uses
+
+' External connections
+JpaUserRepo --> DB
+JpaMovieRepo --> DB
+JpaRentalRepo --> DB
+Clients --> UserCtrl
+Clients --> MovieCtrl
+Clients --> RentalCtrl
+
+' Mapper relationships
+UserMap --> UserModel : maps to/from
+UserMap --> UserDbo : maps to/from
+MovieMap --> MovieModel : maps to/from
+MovieMap --> MovieDbo : maps to/from
+RentalMap --> RentalModel : maps to/from
+RentalMap --> RentalDbo : maps to/from
+
+note top of UserUC
+  Consolidated Use Case Interface:
+  - create(CreateUserRequestContent)
+  - get(String userId)
+  - update(String userId, UpdateUserRequestContent)
+  - delete(String userId)
+  - list(Integer page, Integer size, String search)
+end note
+
+note top of UserSvc
+  Consolidated Service Implementation:
+  - Implements all CRUD operations
+  - Handles business logic
+  - Manages transactions
+  - Includes logging and error handling
+end note
+
+note top of UserCtrl
+  REST Controller Features:
+  - All CRUD endpoints
+  - Request/Response headers
+  - Validation annotations
+  - OpenAPI documentation
+  - Exception handling
+end note
+
+note bottom of DB
+  Database Features:
+  - JPA/Hibernate entities
+  - Automatic schema generation
+  - Transaction management
+  - Connection pooling
+end note
+
+@enduml

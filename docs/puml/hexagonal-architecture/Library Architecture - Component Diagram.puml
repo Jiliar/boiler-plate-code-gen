@@ -1,0 +1,208 @@
+@startuml Library Architecture Component Diagram
+!theme plain
+title PyJava Backend CodeGen v2 - Library Architecture
+
+skinparam packageStyle rectangle
+skinparam component {
+    BackgroundColor<<core>> LightBlue
+    BackgroundColor<<templates>> LightGreen
+    BackgroundColor<<config>> LightYellow
+    BackgroundColor<<output>> LightCoral
+}
+
+package "Entry Points" {
+    [main.py] as Main
+    [__main__.py] as ModuleEntry
+    [hexagonal-architecture-generator-v2.py] as BridgeScript
+}
+
+package "Core Library Components" <<core>> {
+    [ConfigLoader] as CL
+    [OpenApiProcessor] as OAP
+    [TemplateRenderer] as TR
+    [FileManager] as FM
+    [PropertyConverter] as PC
+    [CodeGenerator] as CG
+}
+
+package "Template System" <<templates>> {
+    package "Mustache Templates" {
+        [pojo.mustache] as PojoTemplate
+        [consolidatedService.mustache] as ServiceTemplate
+        [consolidatedUseCase.mustache] as UseCaseTemplate
+        [apiController.mustache] as ControllerTemplate
+        [apiRepository.mustache] as RepoTemplate
+        [apiEntity.mustache] as EntityTemplate
+        [apiMapper.mustache] as MapperTemplate
+        [Application.mustache] as AppTemplate
+        [pom.xml.mustache] as PomTemplate
+        [Configuration.mustache] as ConfigTemplate
+        [EntityStatus.mustache] as StatusTemplate
+    }
+}
+
+package "Configuration" <<config>> {
+    [params.json] as ParamsConfig
+    [smithy-build.json] as SmithyConfig
+    [pyproject.toml] as ProjectConfig
+}
+
+package "Input Sources" {
+    package "Smithy Definitions" {
+        [user-service.smithy] as UserSmithyDef
+        [movie-service.smithy] as MovieSmithyDef
+        [location-service.smithy] as LocationSmithyDef
+    }
+    
+    package "Generated OpenAPI" {
+        [UserService.openapi.json] as UserOpenAPI
+        [MovieService.openapi.json] as MovieOpenAPI
+        [LocationService.openapi.json] as LocationOpenAPI
+    }
+}
+
+package "Generated Output" <<output>> {
+    package "Domain Layer" {
+        [User.java] as UserDomain
+        [Movie.java] as MovieDomain
+        [UserUseCase.java] as UserUC
+        [UserRepositoryPort.java] as UserPort
+        [EntityStatus.java] as StatusEnum
+    }
+    
+    package "Application Layer" {
+        [UserService.java] as UserService
+        [UserMapper.java] as UserMapper
+        [CreateUserRequestContent.java] as UserDTO
+    }
+    
+    package "Infrastructure Layer" {
+        [UserController.java] as UserController
+        [UserDbo.java] as UserEntity
+        [JpaUserRepository.java] as UserRepo
+        [UserRepositoryAdapter.java] as UserAdapter
+        [ApplicationConfiguration.java] as AppConfig
+    }
+    
+    package "Project Files" {
+        [pom.xml] as PomFile
+        [application.properties] as PropsFile
+        [UserServiceApplication.java] as MainClass
+        [docker-compose.yml] as DockerCompose
+        [Dockerfile] as DockerFile
+    }
+}
+
+' Entry point relationships
+Main --> CG : orchestrates
+ModuleEntry --> Main : delegates to
+BridgeScript --> CG : uses directly
+
+' Core component relationships
+CG --> CL : loads configuration
+CG --> OAP : processes OpenAPI specs
+CG --> TR : renders templates
+CG --> FM : manages files
+CG --> PC : converts properties
+
+' Configuration loading
+CL --> ParamsConfig : reads
+CL --> ProjectConfig : references
+
+' OpenAPI processing
+OAP --> UserOpenAPI : processes
+OAP --> MovieOpenAPI : processes
+OAP --> LocationOpenAPI : processes
+
+' Template rendering
+TR --> PojoTemplate : renders DTOs
+TR --> ServiceTemplate : renders services
+TR --> UseCaseTemplate : renders use cases
+TR --> ControllerTemplate : renders controllers
+TR --> RepoTemplate : renders repositories
+TR --> EntityTemplate : renders entities
+TR --> MapperTemplate : renders mappers
+TR --> AppTemplate : renders main class
+TR --> PomTemplate : renders pom.xml
+TR --> ConfigTemplate : renders configuration
+TR --> StatusTemplate : renders enum
+
+' File management
+FM --> UserDomain : creates
+FM --> UserService : creates
+FM --> UserController : creates
+FM --> UserEntity : creates
+FM --> UserRepo : creates
+FM --> UserAdapter : creates
+FM --> UserMapper : creates
+FM --> UserDTO : creates
+FM --> UserUC : creates
+FM --> UserPort : creates
+FM --> StatusEnum : creates
+FM --> AppConfig : creates
+FM --> PomFile : creates
+FM --> PropsFile : creates
+FM --> MainClass : creates
+FM --> DockerCompose : creates
+FM --> DockerFile : creates
+
+' Smithy to OpenAPI flow
+UserSmithyDef --> UserOpenAPI : smithy build
+MovieSmithyDef --> MovieOpenAPI : smithy build
+LocationSmithyDef --> LocationOpenAPI : smithy build
+
+note top of CG
+  Main Orchestrator:
+  - Coordinates all components
+  - Manages generation workflow
+  - Handles multiple projects
+  - Provides error handling
+  - Supports consolidated architecture
+end note
+
+note top of OAP
+  OpenAPI Processing:
+  - Loads multiple service specs
+  - Extracts schemas and operations
+  - Groups operations by entity
+  - Identifies CRUD patterns
+  - Supports complex operations
+end note
+
+note top of TR
+  Template Rendering:
+  - Uses Mustache templating
+  - Supports context variables
+  - Handles HTML escaping
+  - Renders multiple file types
+  - Maintains template consistency
+end note
+
+note top of CL
+  Configuration Management:
+  - Loads project configurations
+  - Builds package structures
+  - Creates template contexts
+  - Supports multiple projects
+  - Handles hexagonal architecture
+end note
+
+note bottom of FM
+  File Management:
+  - Creates directory structures
+  - Handles Java package paths
+  - Manages file operations
+  - Organizes by architecture layers
+  - Supports multiple projects
+end note
+
+note bottom of PC
+  Property Conversion:
+  - Maps OpenAPI to Java types
+  - Generates validation annotations
+  - Handles type imports
+  - Supports complex schemas
+  - Maintains type safety
+end note
+
+@enduml
