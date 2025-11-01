@@ -255,7 +255,36 @@ Key configuration options:
 
 ## Smithy Service Definition
 
-### 1. Operation Naming Conventions
+### 1. Project Structure Requirements
+
+**IMPORTANT**: Each Smithy service file must have a corresponding projection in `smithy-build.json` to generate the OpenAPI specification.
+
+#### Required Configuration:
+```json
+{
+  "version": "1.0",
+  "projections": {
+    "user_service": {
+      "plugins": {
+        "openapi": {
+          "service": "com.example.userservice#UserService",
+          "protocol": "aws.protocols#restJson1"
+        }
+      }
+    },
+    "movie_service": {
+      "plugins": {
+        "openapi": {
+          "service": "com.example.movieservice#MovieService",
+          "protocol": "aws.protocols#restJson1"
+        }
+      }
+    }
+  }
+}
+```
+
+### 2. Operation Naming Conventions
 
 **IMPORTANT**: The generator expects operations to follow specific CRUD prefixes for proper code generation:
 
@@ -290,7 +319,7 @@ operations: [
 ]
 ```
 
-### 2. Define Your Service in Smithy
+### 3. Define Your Service in Smithy
 
 Create or modify `smithy/user-service.smithy`:
 
