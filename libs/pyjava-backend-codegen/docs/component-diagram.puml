@@ -26,7 +26,7 @@ package "pyjava-backend-codegen" {
     }
     
     package "File System" {
-        [templates/java/*.mustache] as Templates
+        [libs/pyjava-backend-codegen/templates/*.mustache] as Templates
         [libs/config/params.json] as Config
         [build/smithy/*/openapi/*.json] as OpenApiSpecs
         [projects/*] as OutputProjects
