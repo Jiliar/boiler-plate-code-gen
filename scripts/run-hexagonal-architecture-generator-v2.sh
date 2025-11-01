@@ -11,7 +11,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Define paths
 CONFIG_PATH="$PROJECT_ROOT/libs/config/params.json"
-TEMPLATES_DIR="$PROJECT_ROOT/templates/java"
+TEMPLATES_DIR="$PROJECT_ROOT/libs/pyjava-backend-codegen/templates"
 
 # Get first project name from params.json array
 if [ -f "$PROJECT_ROOT/libs/config/params.json" ]; then

@@ -46,12 +46,12 @@ def main():
 
     if len(sys.argv) > 1 and sys.argv[1] in ['-h', '--help']:
         print("Usage: python hexagonal-architecture-generator-v2.py [templates_dir]")
-        print("Example: python hexagonal-architecture-generator-v2.py templates/java")
+        print("Example: python hexagonal-architecture-generator-v2.py libs/pyjava-backend-codegen/templates")
         print("Config: libs/config/params.json (array of project configurations)")
         sys.exit(0)
     
     config_path = "libs/config/params.json"
-    templates_dir = sys.argv[1] if len(sys.argv) > 1 else "templates/java"
+    templates_dir = sys.argv[1] if len(sys.argv) > 1 else "libs/pyjava-backend-codegen/templates"
     
     try:
         # Load all project configurations

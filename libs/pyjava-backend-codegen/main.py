@@ -52,12 +52,12 @@ def main():
 
     if len(sys.argv) > 1 and sys.argv[1] in ['-h', '--help']:
         print("Usage: python -m pyjava-backend-codegen [templates_dir]")
-        print("Example: python -m pyjava-backend-codegen templates/java")
+        print("Example: python -m pyjava-backend-codegen libs/pyjava-backend-codegen/templates")
         print("Config: libs/config/params.json (array of project configurations)")
         sys.exit(0)
     
     config_path = "libs/config/params.json"
-    templates_dir = sys.argv[1] if len(sys.argv) > 1 else "templates/java"
+    templates_dir = sys.argv[1] if len(sys.argv) > 1 else str(Path(__file__).parent / "templates")
     
     try:
         # Load all project configurations
