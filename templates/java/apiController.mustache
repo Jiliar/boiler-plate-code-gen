@@ -1,7 +1,11 @@
 package {{packageName}};
 
-import {{domain_ports_input}}.*;
-import {{application_dto}}.*;
+{{#useCaseImports}}
+import {{.}};
+{{/useCaseImports}}
+{{#dtoImports}}
+import {{.}};
+{{/dtoImports}}
 import {{utils}}.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -42,12 +46,9 @@ public class {{classname}} {
 
     private static final LoggingUtils logger = LoggingUtils.getLogger({{classname}}.class);
 
-    private final Create{{entityName}}UseCase create{{entityName}}UseCase;
-    private final Get{{entityName}}UseCase get{{entityName}}UseCase;
-    private final Update{{entityName}}UseCase update{{entityName}}UseCase;
-    private final Delete{{entityName}}UseCase delete{{entityName}}UseCase;
-    private final List{{entityName}}sUseCase list{{entityName}}sUseCase;
+    private final {{entityName}}UseCase {{entityVarName}}UseCase;
 
+{{#hasCreate}}
     @PostMapping
     @Operation(summary = "Create a new {{entityName}}", description = "Creates a new {{entityName}} with the provided information")
     @ApiResponses(value = {
@@ -65,10 +66,12 @@ public class {{classname}} {
             @Parameter(description = "Client service identifier")
             @RequestHeader(value = "X-Client-Id", required = false) String clientId) {
         logger.info("Creating {{entityVarName}} with request: {} [RequestID: {}, CorrelationID: {}, ClientID: {}]", request, requestId, correlationId, clientId);
-        Create{{entityName}}ResponseContent response = create{{entityName}}UseCase.execute(request);
+        Create{{entityName}}ResponseContent response = {{entityVarName}}UseCase.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+{{/hasCreate}}
 
+{{#hasGet}}
     @GetMapping("/{{entityIdPath}}")
     @Operation(summary = "Get {{entityName}} by ID", description = "Retrieves a {{entityName}} by its unique identifier")
     @ApiResponses(value = {
@@ -85,10 +88,12 @@ public class {{classname}} {
             @Parameter(description = "Client service identifier")
             @RequestHeader(value = "X-Client-Id", required = false) String clientId) {
         logger.info("Getting {{entityVarName}} with id: {} [RequestID: {}, CorrelationID: {}, ClientID: {}]", {{entityVarName}}Id, requestId, correlationId, clientId);
-        Get{{entityName}}ResponseContent response = get{{entityName}}UseCase.execute({{entityVarName}}Id);
+        Get{{entityName}}ResponseContent response = {{entityVarName}}UseCase.get({{entityVarName}}Id);
         return ResponseEntity.ok(response);
     }
+{{/hasGet}}
 
+{{#hasUpdate}}
     @PutMapping("/{{entityIdPath}}")
     @Operation(summary = "Update {{entityName}}", description = "Updates an existing {{entityName}} with new information")
     @ApiResponses(value = {
@@ -108,10 +113,12 @@ public class {{classname}} {
             @Parameter(description = "Client service identifier")
             @RequestHeader(value = "X-Client-Id", required = false) String clientId) {
         logger.info("Updating {{entityVarName}} {} with request: {} [RequestID: {}, CorrelationID: {}, ClientID: {}]", {{entityVarName}}Id, request, requestId, correlationId, clientId);
-        Update{{entityName}}ResponseContent response = update{{entityName}}UseCase.execute({{entityVarName}}Id, request);
+        Update{{entityName}}ResponseContent response = {{entityVarName}}UseCase.update({{entityVarName}}Id, request);
         return ResponseEntity.ok(response);
     }
+{{/hasUpdate}}
 
+{{#hasDelete}}
     @DeleteMapping("/{{entityIdPath}}")
     @Operation(summary = "Delete {{entityName}}", description = "Deletes a {{entityName}} by its unique identifier")
     @ApiResponses(value = {
@@ -128,10 +135,12 @@ public class {{classname}} {
             @Parameter(description = "Client service identifier")
             @RequestHeader(value = "X-Client-Id", required = false) String clientId) {
         logger.info("Deleting {{entityVarName}} with id: {} [RequestID: {}, CorrelationID: {}, ClientID: {}]", {{entityVarName}}Id, requestId, correlationId, clientId);
-        Delete{{entityName}}ResponseContent response = delete{{entityName}}UseCase.execute({{entityVarName}}Id);
+        Delete{{entityName}}ResponseContent response = {{entityVarName}}UseCase.delete({{entityVarName}}Id);
         return ResponseEntity.ok(response);
     }
+{{/hasDelete}}
 
+{{#hasList}}
     @GetMapping
     @Operation(summary = "List {{entityName}}s", description = "Retrieves a paginated list of {{entityName}}s with optional search")
     @ApiResponses(value = {
@@ -151,8 +160,30 @@ public class {{classname}} {
             @Parameter(description = "Client service identifier")
             @RequestHeader(value = "X-Client-Id", required = false) String clientId) {
         logger.info("Listing {{entityVarName}}s with page: {}, size: {}, search: {} [RequestID: {}, CorrelationID: {}, ClientID: {}]", page, size, search, requestId, correlationId, clientId);
-        // TODO: Create List{{entityName}}sRequest DTO
-        List{{entityName}}sResponseContent response = list{{entityName}}sUseCase.execute(""); // Placeholder
+        List{{entityName}}sResponseContent response = {{entityVarName}}UseCase.list(page, size, search);
         return ResponseEntity.ok(response);
     }
+{{/hasList}}
+
+{{#hasComplexOperations}}
+{{#complexOperations}}
+    @GetMapping("/{{pathSegment}}")
+    @Operation(summary = "{{operationId}}", description = "Complex operation: {{operationId}}")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Operation completed successfully")
+    })
+    public ResponseEntity<{{responseType}}> {{methodName}}(
+            @Parameter(description = "Unique request identifier", required = true)
+            @RequestHeader("X-Request-ID") String requestId,
+            @Parameter(description = "Correlation identifier for transaction tracking")
+            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId,
+            @Parameter(description = "Client service identifier")
+            @RequestHeader(value = "X-Client-Id", required = false) String clientId) {
+        logger.info("Executing {{operationId}} [RequestID: {}, CorrelationID: {}, ClientID: {}]", requestId, correlationId, clientId);
+        {{responseType}} response = {{entityVarName}}UseCase.{{methodName}}();
+        return ResponseEntity.ok(response);
+    }
+
+{{/complexOperations}}
+{{/hasComplexOperations}}
 }

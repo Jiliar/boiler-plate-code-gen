@@ -30,7 +30,7 @@ public class SecurityConfiguration {
                 .ignoringRequestMatchers("/h2-console/**")
                 .ignoringRequestMatchers("/{{entityPath}}/**")
             )
-            .headers(headers -> headers.frameOptions().disable());
+            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
         
         return http.build();
     }

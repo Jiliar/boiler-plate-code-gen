@@ -1,5 +1,5 @@
 # Server Configuration
-server.port=8081
+server.port={{infra.http.ports.int}}
 
 # Database Configuration - {{database.sgbd}} {{database.version}}
 {{#database.postgresql}}spring.datasource.url=jdbc:postgresql://{{database.host}}:{{database.port}}/{{database.name}}

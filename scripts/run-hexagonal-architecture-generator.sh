@@ -10,12 +10,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Define paths
-CONFIG_PATH="$PROJECT_ROOT/scripts/config/params.json"
+CONFIG_PATH="$PROJECT_ROOT/libs/config/params.json"
 TEMPLATES_DIR="$PROJECT_ROOT/templates/java"
 
 # Get first project name from params.json array
-if [ -f "$PROJECT_ROOT/scripts/config/params.json" ]; then
-    PROJECT_NAME=$(python3 -c "import json; config=json.load(open('$PROJECT_ROOT/scripts/config/params.json')); print(config[0]['project']['name'] if config else 'generated-project')")
+if [ -f "$PROJECT_ROOT/libs/config/params.json" ]; then
+    PROJECT_NAME=$(python3 -c "import json; config=json.load(open('$PROJECT_ROOT/libs/config/params.json')); print(config[0]['project']['general']['name'] if config else 'generated-project')")
 else
     PROJECT_NAME="generated-project"
 fi
@@ -49,8 +49,8 @@ fi
 
 # Remove existing projects if they exist
 echo "🗑️  Cleaning up existing projects..."
-if [ -d "$PROJECT_ROOT/$PROJECT_NAME" ]; then
-    rm -rf "$PROJECT_ROOT/$PROJECT_NAME"
+if [ -d "$PROJECT_ROOT/projects" ]; then
+    rm -rf "$PROJECT_ROOT/projects"
 fi
 echo "✅ Cleanup complete"
 
@@ -58,8 +58,8 @@ echo ""
 echo "🏗️  Generating Hexagonal Architecture project..."
 echo ""
 
-# Run the generator (config is now unified in scripts/config/)
-python3 "$SCRIPT_DIR/hexagonal-architecture-generator.py" "$TEMPLATES_DIR"
+# Run the generator (config is now unified in libs/config/)
+python3 "$PROJECT_ROOT/libs/hexagonal-architecture-generator.py" "$TEMPLATES_DIR"
 
 echo ""
 echo "🎉 Generation complete! Check the generated projects in the project root"

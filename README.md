@@ -255,7 +255,42 @@ Key configuration options:
 
 ## Smithy Service Definition
 
-### 1. Define Your Service in Smithy
+### 1. Operation Naming Conventions
+
+**IMPORTANT**: The generator expects operations to follow specific CRUD prefixes for proper code generation:
+
+#### Required Operation Prefixes:
+- **`Create`** - For creating new entities (e.g., `CreateUser`, `CreateMovie`, `CreateRental`)
+- **`Get`** - For retrieving single entities (e.g., `GetUser`, `GetMovie`, `GetRental`)
+- **`Update`** - For updating existing entities (e.g., `UpdateUser`, `UpdateMovie`, `UpdateRental`)
+- **`Delete`** - For deleting entities (e.g., `DeleteUser`, `DeleteMovie`, `DeleteRental`)
+- **`List`** - For listing multiple entities (e.g., `ListUsers`, `ListMovies`, `ListRentals`)
+
+#### Examples:
+✅ **Correct Naming**:
+```smithy
+operations: [
+    CreateMovie,     // → Generates MovieService with Movie entity
+    GetMovie,        // → Generates MovieService with Movie entity
+    UpdateMovie,     // → Generates MovieService with Movie entity
+    DeleteMovie,     // → Generates MovieService with Movie entity
+    ListMovies,      // → Generates MovieService with Movie entity (singular)
+    CreateRental,    // → Generates RentalService with Rental entity
+    UpdateRental     // → Generates RentalService with Rental entity
+]
+```
+
+❌ **Incorrect Naming** (will cause generation issues):
+```smithy
+operations: [
+    RentMovie,       // ❌ No CRUD prefix - generates "Entity" fallback
+    ReturnMovie,     // ❌ No CRUD prefix - generates "Entity" fallback
+    SearchUsers,     // ❌ No CRUD prefix - generates "Entity" fallback
+    FindMovies       // ❌ No CRUD prefix - generates "Entity" fallback
+]
+```
+
+### 2. Define Your Service in Smithy
 
 Create or modify `smithy/user-service.smithy`:
 
@@ -303,24 +338,37 @@ public class User {
 }
 ```
 
-2. **Use Case Interface** (`domain/ports/input/CreateUserUseCase.java`)
+2. **Consolidated Use Case Interface** (`domain/ports/input/UserUseCase.java`)
 ```java
-public interface CreateUserUseCase {
-    CreateUserResponseContent execute(CreateUserRequestContent request);
+public interface UserUseCase {
+    CreateUserResponseContent create(CreateUserRequestContent request);
+    GetUserResponseContent get(String userId);
+    UpdateUserResponseContent update(String userId, UpdateUserRequestContent request);
+    DeleteUserResponseContent delete(String userId);
+    ListUsersResponseContent list();
 }
 ```
 
-3. **Application Service** (`application/service/CreateUserService.java`)
+3. **Consolidated Application Service** (`application/service/UserService.java`)
 ```java
 @Service
 @RequiredArgsConstructor
-public class CreateUserService implements CreateUserUseCase {
+@Transactional
+public class UserService implements UserUseCase {
     private final UserRepositoryPort userRepositoryPort;
+    private final UserMapper userMapper;
     
     @Override
-    public CreateUserResponseContent execute(CreateUserRequestContent request) {
+    public CreateUserResponseContent create(CreateUserRequestContent request) {
         // Business logic implementation
     }
+    
+    @Override
+    public GetUserResponseContent get(String userId) {
+        // Business logic implementation
+    }
+    
+    // ... other CRUD operations
 }
 ```
 
@@ -330,12 +378,21 @@ public class CreateUserService implements CreateUserUseCase {
 @RequestMapping("/users")
 @RequiredArgsConstructor
 public class UserController {
-    private final CreateUserUseCase createUserUseCase;
+    private final UserUseCase userUseCase;
     
     @PostMapping
-    public ResponseEntity<CreateUserResponseContent> createUser(@Valid @RequestBody CreateUserRequestContent request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(createUserUseCase.execute(request));
+    public ResponseEntity<CreateUserResponseContent> createUser(
+            @Valid @RequestBody CreateUserRequestContent request,
+            @RequestHeader("X-Request-ID") String requestId) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userUseCase.create(request));
     }
+    
+    @GetMapping("/{userId}")
+    public ResponseEntity<GetUserResponseContent> getUser(@PathVariable String userId) {
+        return ResponseEntity.ok(userUseCase.get(userId));
+    }
+    
+    // ... other endpoints
 }
 ```
 

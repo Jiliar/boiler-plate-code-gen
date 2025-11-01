@@ -28,6 +28,32 @@
           "schemaVersion": "draft-07"
         }
       }
+    },
+    "back-ms-users-location": {
+      "plugins": {
+        "model": {
+          "imports": [
+            "src/main/"
+          ]
+        },
+        "openapi": {
+          "service": "com.example.userservice#LocationService",
+          "schemaVersion": "draft-07"
+        }
+      }
+    },
+    "back-ms-movies": {
+      "plugins": {
+        "model": {
+          "imports": [
+            "src/main/"
+          ]
+        },
+        "openapi": {
+          "service": "com.example.movieservice#MovieService",
+          "schemaVersion": "draft-07"
+        }
+      }
     }
   }
 }
